@@ -14,18 +14,18 @@
     return typeof value === 'boolean' ? value : true;
   }
 
-  function drawPaths(ctx, path, width, height) {
+  function drawPath(ctx, path, width, height) {
     ctx.save();
     ctx.lineWidth = path.width;
-      ctx.lineCap = 'round';
-      switch (path.type) {
-          case 'road':
-              ctx.strokeStyle = 'rgba(230, 194, 138, 0.75)'
-              break;
-          case 'river':
-              ctx.strokeStyle = 'rgba(100, 149, 237, 0.75)'
-		  break;
-      }
+    ctx.lineCap = 'round';
+    switch (path.type) {
+      case 'road':
+        ctx.strokeStyle = 'rgba(230, 194, 138, 1)'
+        break;
+      case 'river':
+        ctx.strokeStyle = 'rgba(100, 149, 237, 1)'
+	  break;
+    }
 
     ctx.beginPath();
 
@@ -38,17 +38,8 @@
           ctx.bezierCurveTo(lingerX, lingerY, width * point.inX, height * point.inY, point.x, point.y);
         }
         lingerX = width * point.outX;
-        lingerY = height * point.outY;
-        
+        lingerY = height * point.outY;        
     });
-    ctx.bezierCurveTo(
-      width * 0.35,
-      height * 0.65,
-      width * 0.45,
-      height * 0.95,
-      width * 0.75,
-      height * 0.2
-    );
     ctx.stroke();
 
     ctx.restore();
@@ -225,7 +216,7 @@
     const paths = state?.paths || [];
     if (paths.length !== 0 && state.pathsVisible) {
       paths.forEach((path) => {
-        drawPaths(ctx, path, width, height);
+        drawPath(ctx, path, width, height);
       });
     }
 

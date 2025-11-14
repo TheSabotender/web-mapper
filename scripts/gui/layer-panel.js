@@ -15,6 +15,8 @@
   const REMOVE_ICON = 'assets/icons/util/trash.svg';
   const TERRAIN_LAYER_ID = 'terrain';
   const TERRAIN_LAYER = { id: TERRAIN_LAYER_ID, name: 'Terrain', visible: true, locked: false };
+  const PATH_LAYER_ID = 'paths';
+  const PATH_LAYER = { id: PATH_LAYER_ID, name: 'Paths', visible: true, locked: false };
   const MIN_HEIGHT = 220;
   const PANEL_MARGIN = 16;
   const PANEL_ANCHORS = [
@@ -72,7 +74,23 @@
     state.terrainVisible = terrainLayer.visible;
     state.terrainLocked = terrainLayer.locked;
     return terrainLayer;
-  }
+    }
+
+    function ensurePathLayer(state) {
+        const visibleValue = typeof state?.pathsVisible === 'boolean' ? state.pathsVisible : true
+        const lockedValue = typeof state?.pathsLocked === 'boolean' ? state.pathsLocked : false;
+
+        const pathLayer = {
+            ...PATH_LAYER,
+            visible: Boolean(visibleValue),
+            locked: Boolean(lockedValue),
+        };
+
+        state.pathLayer = pathLayer;
+        state.pathVisible = pathLayer.visible;
+        state.pathLocked = pathLayer.locked;
+        return pathLayer;
+    }
 
   function ensureLayerState(state) {
     if (!state || typeof state !== 'object') {
@@ -83,6 +101,7 @@
     layers = normalizeLayers(layers);
     state.layers = layers;
     ensureTerrainLayer(state);
+    ensurePathLayer(state);
     
     if (typeof state.layerCounter !== 'number' || state.layerCounter < layers.length) {
       state.layerCounter = Math.max(layers.length, 0) || layers.length;
@@ -103,6 +122,11 @@
   function getTerrainLayer(state) {
     if (!state) return null;
     return ensureTerrainLayer(state);
+  }
+
+  function getPathLayer(state) {
+    if (!state) return null;
+    return ensurePathLayer(state);
   }
 
   ui.LayerPanel = {
@@ -350,6 +374,7 @@
       function setActiveLayer(layerId) {
         if (!layerId) return;
         if (layerId === TERRAIN_LAYER_ID) return;
+        if (layerId === PATH_LAYER_ID) return;
         if (layerState.activeLayerId === layerId) return;
         const layer = findLayer(layerState, layerId);
         if (!layer) return;
@@ -367,6 +392,15 @@
           requestRender?.();
           WebMapper.saveState?.();
           return;
+        }
+        if (layerId === PATH_LAYER_ID) {
+          const pathLayer = getPathLayer(layerState);
+          if (!pathLayer) return;
+          pathLayer.visible = !pathLayer.visible;
+          layerState.pathsVisible = pathLayer.visible;
+          renderLayers();
+          requestRender?.();
+          WebMapper.saveState?.();
         }
         const layer = findLayer(layerState, layerId);
         if (!layer) return;
@@ -386,6 +420,15 @@
           WebMapper.saveState?.();
           return;
         }
+        if (layerId === PATH_LAYER_ID) {
+          const pathLayer = getPathLayer(layerState);
+          if (!pathLayer) return;
+          pathLayer.locked = !pathLayer.locked;
+          layerState.pathsLocked = pathLayer.locked;
+          renderLayers();
+          WebMapper.saveState?.();
+          return;
+        }
         const layer = findLayer(layerState, layerId);
         if (!layer) return;
         layer.locked = !layer.locked;
@@ -395,6 +438,7 @@
 
       function removeLayer(layerId) {
         if (layerId === TERRAIN_LAYER_ID) return;
+        if (layerId === PATH_LAYER_ID) return;
         const index = layerState.layers.findIndex((layer) => layer.id === layerId);
         if (index === -1) return;
         if (layerState.layers[index].locked) return;
@@ -415,6 +459,7 @@
 
       function renameLayer(layerId) {
         if (layerId === TERRAIN_LAYER_ID) return;
+        if (layerId === PATH_LAYER_ID) return;
         const layer = findLayer(layerState, layerId);
         if (!layer || layer.locked) return;
 
@@ -532,6 +577,45 @@
 
           terrainItem.append(terrainVisibilityButton, terrainLockButton, terrainLabel);
           fragment.appendChild(terrainItem);
+        }
+
+        const pathLayer = getPathLayer(layerState);
+        if (pathLayer) {
+            const pathItem = document.createElement('div');
+            pathItem.className = 'layer-panel__item layer-panel__item--path';
+            pathItem.dataset.layerId = PATH_LAYER_ID;
+            pathItem.dataset.staticLayer = 'true';
+            pathItem.setAttribute('role', 'option');
+            pathItem.setAttribute('aria-selected', 'false');
+            pathItem.id = `layer-option-${PATH_LAYER_ID}`;
+            pathItem.tabIndex = -1;
+
+            if (pathLayer.locked) {
+                pathItem.classList.add('is-locked');
+            }
+
+            const pathVisibilityButton = createIconButton({
+                action: 'toggle-visibility',
+                layerId: PATH_LAYER_ID,
+                icon: pathLayer.visible ? VISIBILITY_ICONS.true : VISIBILITY_ICONS.false,
+                pressed: pathLayer.visible,
+                label: `${pathLayer.visible ? 'Hide' : 'Show'} path layer`,
+            });
+
+            const pathLockButton = createIconButton({
+                action: 'toggle-lock',
+                layerId: PATH_LAYER_ID,
+                icon: pathLayer.locked ? LOCK_ICONS.true : LOCK_ICONS.false,
+                pressed: pathLayer.locked,
+                label: `${pathLayer.locked ? 'Unlock' : 'Lock'} path layer`,
+            });
+
+            const pathLabel = document.createElement('span');
+            pathLabel.className = 'layer-panel__label';
+            pathLabel.textContent = PATH_LAYER.name;
+
+            pathItem.append(pathVisibilityButton, pathLockButton, pathLabel);
+            fragment.appendChild(pathItem);
         }
 
         layerState.layers.forEach((layer) => {

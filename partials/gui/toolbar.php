@@ -17,7 +17,7 @@
 
   <div class="toolbar__group toolbar__group--actions">
     <button type="button" class="toolbar__button is-active" data-tool="path" aria-pressed="true" aria-label="Paths" title="Paths" >
-      <img src="assets/icons/util/brush.svg" class="toolbar__icon" alt="" aria-hidden="true">
+      <img src="assets/icons/target/line.svg" class="toolbar__icon" alt="" aria-hidden="true">
     </button>
 
     <button type="button" class="toolbar__button" data-tool="landmark" aria-pressed="false" aria-label="Landmark" title="Landmark" >
