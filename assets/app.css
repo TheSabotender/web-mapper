@@ -609,6 +609,17 @@ body {
     min-width: 0;
 }
 
+.layer-panel__item[data-draggable="true"] {
+    cursor: grab;
+}
+
+.layer-panel__item[data-draggable="true"].is-grabbed {
+    cursor: grabbing;
+    border-color: rgba(125, 196, 255, 0.4);
+    background: rgba(125, 196, 255, 0.18);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
 .layer-panel__item--terrain {
     grid-template-columns: auto auto minmax(0, 1fr);
 }

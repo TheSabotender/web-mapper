@@ -8,9 +8,9 @@
     settings: { showGrid: true, animation: 'slow', uiScale: 100 },
     features: {
       layers: [
-        { id: 'roads', name: 'Roads', visible: true, locked: false },
-        { id: 'settlements', name: 'Settlements', visible: true, locked: false },
-        { id: 'points', name: 'Points of Interest', visible: true, locked: false },
+        { id: 'roads', name: 'Roads', visible: true, locked: false, sortIndex: 0 },
+        { id: 'settlements', name: 'Settlements', visible: true, locked: false, sortIndex: 1 },
+        { id: 'points', name: 'Points of Interest', visible: true, locked: false, sortIndex: 2 },
       ],
       activeLayerId: 'roads',
     },
@@ -47,9 +47,33 @@
   state.canvas = Object.assign({}, defaults.canvas, state.canvas);
   state.settings = Object.assign({}, defaults.settings, state.settings);
   state.features = Object.assign({}, defaults.features, state.features);
-  state.features.layers = Array.isArray(state.features.layers)
-    ? state.features.layers.map((layer) => ({ ...layer }))
-    : defaults.features.layers.map((layer) => ({ ...layer }));
+
+  const sourceLayers = Array.isArray(state.features.layers)
+    ? state.features.layers
+    : defaults.features.layers;
+
+  const layersWithMetadata = sourceLayers.map((layer, index) => ({
+    layer: { ...layer },
+    originalIndex: index,
+  }));
+
+  layersWithMetadata.forEach((entry, index) => {
+    const { layer } = entry;
+    layer.sortIndex = typeof layer.sortIndex === 'number' ? layer.sortIndex : index;
+  });
+
+  layersWithMetadata.sort((a, b) => {
+    if (a.layer.sortIndex !== b.layer.sortIndex) {
+      return a.layer.sortIndex - b.layer.sortIndex;
+    }
+    return a.originalIndex - b.originalIndex;
+  });
+
+  state.features.layers = layersWithMetadata.map((entry, index) => {
+    entry.layer.sortIndex = index;
+    return entry.layer;
+  });
+
   if (typeof state.features.activeLayerId === 'undefined') {
     state.features.activeLayerId = defaults.features.activeLayerId;
   }
