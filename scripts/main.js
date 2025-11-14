@@ -14,7 +14,7 @@
       ],
       activeLayerId: 'roads',
     },
-    tool: 'brush',
+    tool: 'pan',
   });
 
   function loadState() {
