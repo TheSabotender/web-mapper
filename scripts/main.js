@@ -1,6 +1,8 @@
 (function () {
   const WebMapper = (window.WebMapper = window.WebMapper || {});
 
+  const STORAGE_KEY = 'webMapperStateV1';
+
   const defaults = (WebMapper.defaults = WebMapper.defaults || {
     canvas: { width: 1280, height: 720 },
     settings: { showGrid: true, animation: 'slow', uiScale: 100 },
@@ -35,6 +37,32 @@
     const terrainCanvas = WebMapper.utils.createLayerCanvas('terrain-layer', container);
     const featuresCanvas = WebMapper.utils.createLayerCanvas('features-layer', container);
     const guiCanvas = WebMapper.utils.createLayerCanvas('gui-layer', container);
+
+    function loadState() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return structuredClone(defaults);
+
+            const parsedState = JSON.parse(raw);
+
+            if (!parsedState.features.layers || !Array.isArray(parsedState.features.layers)) {
+                parsedState.features.layers = structuredClone(defaults.features.layers);
+            }
+
+            return parsedState;
+        } catch (e) {
+            console.warn('Failed to load saved state:', e);
+            return structuredClone(defaults);
+        }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (e) {
+        console.warn('Failed to save state:', e);
+      }
+    }
 
     const contexts = {
       terrain: terrainCanvas.getContext('2d'),
