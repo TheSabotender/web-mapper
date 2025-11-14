@@ -82,7 +82,6 @@
         </div>
       </div>
       <div class="tool-controls__field tool-controls__field--color">
-        <span class="tool-controls__label" id="brush-color-label">Brush color</span>
         <div class="tool-controls__control tool-controls__control--color">
           <button
             type="button"
@@ -161,7 +160,6 @@
 
     <div class="tool-controls__panel" data-tool-panel="landmark" hidden>
       <div class="tool-controls__field">
-        <span class="tool-controls__label" id="landmark-mode-label">Mode</span>
         <div class="tool-controls__control tool-controls__control--toggle">
           <div
             class="tool-controls__toggle"
@@ -206,8 +204,7 @@
           <output id="landmark-scale-value" class="tool-controls__value" data-output-for="landmark-scale">100%</output>
         </div>
       </div>
-      <div class="tool-controls__field tool-controls__field--file">
-        <span class="tool-controls__label" id="landmark-image-label">Landmark image</span>
+      <div class="tool-controls__field tool-controls__field--file">        
         <div class="tool-controls__control tool-controls__control--file">
           <div class="tool-controls__file">
             <button
@@ -217,14 +214,7 @@
               aria-labelledby="landmark-image-label landmark-image-value"
             >
               Choose image
-            </button>
-            <span
-              id="landmark-image-value"
-              class="tool-controls__file-value"
-              data-file-value="landmark-image"
-            >
-              None
-            </span>
+            </button>            
           </div>
         </div>
         <input

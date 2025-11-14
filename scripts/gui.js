@@ -103,8 +103,7 @@
         container.querySelectorAll('[data-control="landmark-mode"]')
       ),
       landmarkImageButton: container.querySelector('[data-control="landmark-image"]'),
-      landmarkImagePicker: container.querySelector('[data-picker-for="landmark-image"]'),
-      landmarkImageValue: container.querySelector('[data-file-value="landmark-image"]'),
+      landmarkImagePicker: container.querySelector('[data-picker-for="landmark-image"]'),      
     };
 
     function updateOutput(name, text) {
@@ -209,11 +208,6 @@
       }
 
       syncLandmarkMode();
-
-      if (references.landmarkImageValue) {
-        const name = toolsState.landmark.imageName || 'None';
-        references.landmarkImageValue.textContent = name;
-      }
     }
 
     let isTransitioning = false;
