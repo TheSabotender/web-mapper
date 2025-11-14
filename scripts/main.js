@@ -33,7 +33,8 @@
     };
 
     const utils = WebMapper.utils || {};
-    const clamp = typeof utils.clamp === 'function' ? utils.clamp : (value, min, max) => Math.min(Math.max(value, min), max);
+    const clamp =
+      typeof utils.clamp === 'function' ? utils.clamp : (value, min, max) => Math.min(Math.max(value, min), max);
     const view = (state.view = Object.assign({ x: 0, y: 0, zoom: 1 }, state.view));
     let isPanning = false;
     let activePointerId = null;
@@ -54,13 +55,11 @@
       };
     }
 
-    function clampView() {
+    function centerView() {
       const world = getWorldSize();
       const viewport = getViewportSize();
-      const maxX = Math.max(0, world.width - viewport.width);
-      const maxY = Math.max(0, world.height - viewport.height);
-      view.x = clamp(view.x, 0, maxX);
-      view.y = clamp(view.y, 0, maxY);
+      view.x = world.width * 0.5 - viewport.width * 0.5;
+      view.y = world.height * 0.5 - viewport.height * 0.5;
     }
 
     function resize(width, height) {
@@ -74,8 +73,6 @@
 
       state.canvas.width = targetWidth;
       state.canvas.height = targetHeight;
-
-      clampView();
     }
 
     function render() {
@@ -179,7 +176,6 @@
         const deltaY = event.clientY - startPointer.y;
         view.x = startPointer.viewX - deltaX / startPointer.zoom;
         view.y = startPointer.viewY - deltaY / startPointer.zoom;
-        clampView();
         render();
       },
       { passive: false }
@@ -216,7 +212,6 @@
         view.zoom = newZoom;
         view.x = worldX - pointerX / view.zoom;
         view.y = worldY - pointerY / view.zoom;
-        clampView();
         render();
       },
       { passive: false }
@@ -225,6 +220,11 @@
     resize(state.canvas.width, state.canvas.height);
     render();
     updateAnimationLoop();
+
+    WebMapper.centerView = () => {
+      centerView();
+      render();
+    };
 
     window.addEventListener('resize', () => {
       resize();
