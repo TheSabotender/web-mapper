@@ -23,17 +23,7 @@
     >
       <img src="assets/icons/util/brush.svg" class="toolbar__icon" alt="" aria-hidden="true">
     </button>
-    <button
-      type="button"
-      class="toolbar__button"
-      data-tool="landmark"
-      aria-pressed="false"
-      aria-label="Landmark"
-      title="Landmark"
-    >
-      <img src="assets/icons/location/castle.svg" class="toolbar__icon" alt="" aria-hidden="true">
-    </button>
-    <button
+     <button
       type="button"
       class="toolbar__button"
       data-tool="eraser"
@@ -43,6 +33,16 @@
     >
       <img src="assets/icons/util/eraser.svg" class="toolbar__icon" alt="" aria-hidden="true">
     </button>
+    <button
+      type="button"
+      class="toolbar__button"
+      data-tool="landmark"
+      aria-pressed="false"
+      aria-label="Landmark"
+      title="Landmark"
+    >
+      <img src="assets/icons/location/castle.svg" class="toolbar__icon" alt="" aria-hidden="true">
+    </button>   
   </div>
   <div class="toolbar__group toolbar__group--actions">
     <button
