@@ -1,8 +1,7 @@
 (function () {
   const WebMapper = (window.WebMapper = window.WebMapper || {});
 
-  function drawGradient(ctx) {
-    const { width, height } = ctx.canvas;
+  function drawGradient(ctx, width, height) {
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
     gradient.addColorStop(0, '#3f80ff');
     gradient.addColorStop(0.35, '#4b9b6d');
@@ -13,8 +12,7 @@
     ctx.fillRect(0, 0, width, height);
   }
 
-  function drawTerrainDetails(ctx) {
-    const { width, height } = ctx.canvas;
+  function drawTerrainDetails(ctx, width, height) {
     const hillCount = 6;
 
     ctx.save();
@@ -22,10 +20,13 @@
     ctx.fillStyle = '#0f1c12';
 
     for (let i = 0; i < hillCount; i += 1) {
-      const hillWidth = width * (0.25 + Math.random() * 0.25);
-      const hillHeight = height * (0.1 + Math.random() * 0.2);
-      const x = Math.random() * (width - hillWidth);
-      const y = height - hillHeight - Math.random() * (height * 0.2);
+      const seed = i + 1;
+      const hillWidth = width * (0.25 + 0.1 * Math.sin(seed * 1.3));
+      const hillHeight = height * (0.12 + 0.08 * Math.cos(seed * 1.9));
+      const positionFactor = (Math.sin(seed * 2.1) + 1) / 2;
+      const heightFactor = (Math.cos(seed * 1.7) + 1) / 2;
+      const x = positionFactor * (width - hillWidth);
+      const y = height - hillHeight - heightFactor * (height * 0.2);
 
       ctx.beginPath();
       ctx.moveTo(x, height);
@@ -37,8 +38,7 @@
     ctx.restore();
   }
 
-  function drawGrid(ctx, spacing) {
-    const { width, height } = ctx.canvas;
+  function drawGrid(ctx, spacing, width, height) {
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
     ctx.lineWidth = 1;
@@ -63,13 +63,25 @@
   function RenderTerrain(ctx, state) {
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    drawGradient(ctx);
-    drawTerrainDetails(ctx);
+    const utils = WebMapper.utils || {};
+    let restore = null;
+    if (typeof utils.prepareMapContext === 'function') {
+      restore = utils.prepareMapContext(ctx, state);
+    } else {
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    }
+
+    const width = state?.canvas?.width ?? ctx.canvas.width;
+    const height = state?.canvas?.height ?? ctx.canvas.height;
+
+    drawGradient(ctx, width, height);
+    drawTerrainDetails(ctx, width, height);
 
     if (state?.settings?.showGrid) {
-      drawGrid(ctx, 64);
+      drawGrid(ctx, 64, width, height);
     }
+
+    restore?.();
   }
 
   window.RenderTerrain = RenderTerrain;
