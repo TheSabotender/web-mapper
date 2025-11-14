@@ -7,9 +7,6 @@
     canvas: { width: 1280, height: 720 },
     settings: { showGrid: true, animation: 'slow', uiScale: 100 },
     features: {
-      roads: true,
-      settlements: true,
-      points: true,
       layers: [
         { id: 'roads', name: 'Roads', visible: true, locked: false },
         { id: 'settlements', name: 'Settlements', visible: true, locked: false },
@@ -20,15 +17,66 @@
     tool: 'brush',
   });
 
+  function loadState() {
+    try {
+      if (typeof localStorage === 'undefined') {
+        return structuredClone(defaults);
+      }
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return structuredClone(defaults);
+
+      const parsedState = JSON.parse(raw);
+
+      parsedState.features = parsedState.features || {};
+      if (!parsedState.features.layers || !Array.isArray(parsedState.features.layers)) {
+        parsedState.features.layers = structuredClone(defaults.features.layers);
+      }
+      if (typeof parsedState.features.activeLayerId === 'undefined') {
+        parsedState.features.activeLayerId = defaults.features.activeLayerId;
+      }
+
+      return parsedState;
+    } catch (e) {
+      console.warn('Failed to load saved state:', e);
+      return structuredClone(defaults);
+    }
+  }
+
   const state = (WebMapper.state = WebMapper.state || {});
+  Object.assign(state, loadState());
   state.canvas = Object.assign({}, defaults.canvas, state.canvas);
   state.settings = Object.assign({}, defaults.settings, state.settings);
   state.features = Object.assign({}, defaults.features, state.features);
+  state.features.layers = Array.isArray(state.features.layers)
+    ? state.features.layers.map((layer) => ({ ...layer }))
+    : defaults.features.layers.map((layer) => ({ ...layer }));
+  if (typeof state.features.activeLayerId === 'undefined') {
+    state.features.activeLayerId = defaults.features.activeLayerId;
+  }
+  state.features.layers.forEach((layer) => {
+    if (layer?.id) {
+      state.features[layer.id] = Boolean(layer.visible);
+    }
+  });
   state.tool = state.tool || defaults.tool;
   if (typeof state.debug === 'undefined') {
     const params = new URLSearchParams(window.location.search);
     state.debug = params.has('debug');
   }
+
+  function saveState() {
+    try {
+      if (typeof localStorage === 'undefined') {
+        return;
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.warn('Failed to save state:', e);
+    }
+  }
+
+  WebMapper.loadState = loadState;
+  WebMapper.saveState = saveState;
 
   document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('canvas-stack');
@@ -37,33 +85,6 @@
     const terrainCanvas = WebMapper.utils.createLayerCanvas('terrain-layer', container);
     const featuresCanvas = WebMapper.utils.createLayerCanvas('features-layer', container);
     const guiCanvas = WebMapper.utils.createLayerCanvas('gui-layer', container);
-
-    function loadState() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (!raw) return structuredClone(defaults);
-
-            const parsedState = JSON.parse(raw);
-
-            if (!parsedState.features.layers || !Array.isArray(parsedState.features.layers)) {
-                parsedState.features.layers = structuredClone(defaults.features.layers);
-            }
-
-            return parsedState;
-        } catch (e) {
-            console.warn('Failed to load saved state:', e);
-            return structuredClone(defaults);
-        }
-    }
-
-    function saveState() {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch (e) {
-        console.warn('Failed to save state:', e);
-      }
-    }
-
     const contexts = {
       terrain: terrainCanvas.getContext('2d'),
       features: featuresCanvas.getContext('2d'),
