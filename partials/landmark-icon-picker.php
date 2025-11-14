@@ -52,6 +52,7 @@ if ($iconBasePath && is_dir($iconBasePath)) {
   role="dialog"
   aria-modal="true"
   aria-hidden="true"
+  hidden
 >
   <div class="icon-picker-modal" role="document">
     <header class="icon-picker__header">

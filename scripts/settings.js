@@ -4,6 +4,7 @@
   function setOverlayVisible(overlay, visible) {
     if (!overlay) return;
     overlay.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    overlay.hidden = !visible;
   }
 
   function bindSettings() {
