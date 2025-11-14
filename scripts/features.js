@@ -3,24 +3,29 @@
 
   function isLayerVisible(state, layerId) {
     if (!state) return true;
-    const layers = state.features?.layers;
+    const layers = state?.layers;
     if (Array.isArray(layers)) {
       const layer = layers.find((entry) => entry.id === layerId);
       if (layer) {
         return Boolean(layer.visible);
       }
     }
-    const value = state.features?.[layerId];
+    const value = state?.[layerId];
     return typeof value === 'boolean' ? value : true;
   }
 
-  function drawRoads(ctx, state, width, height) {
-    if (!isLayerVisible(state, 'roads')) return;
-
+  function drawPaths(ctx, path, width, height) {
     ctx.save();
-    ctx.lineWidth = 8;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = 'rgba(230, 194, 138, 0.75)';
+    ctx.lineWidth = path.width;
+      ctx.lineCap = 'round';
+      switch (path.type) {
+          case 'road':
+              ctx.strokeStyle = 'rgba(230, 194, 138, 0.75)'
+              break;
+          case 'river':
+              ctx.strokeStyle = 'rgba(100, 149, 237, 0.75)'
+		  break;
+      }
 
     ctx.beginPath();
     ctx.moveTo(width * 0.1, height * 0.85);
@@ -198,9 +203,14 @@
     const renderedFeatures = [];
     const hoveredFeature = runtime.hoveredFeature || null;
 
-    drawRoads(ctx, state, width, height);
+    const paths = state?.paths || [];
+      if (paths.length !== 0 && state.pathsVisible) {
+        paths.forEach((path) => {
+            drawPaths(ctx, path, width, height);
+        }
+    }
 
-    const layers = state?.map?.layers || [];
+    const layers = state?.layers || [];
     if (layers.length !== 0) {
         layers.forEach((layer) => {
             drawLayerFeatures(ctx, layer, width, height, renderedFeatures, hoveredFeature, {

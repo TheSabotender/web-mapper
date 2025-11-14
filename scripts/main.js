@@ -9,77 +9,82 @@
 
   const defaults = (WebMapper.defaults = WebMapper.defaults || {
     canvas: { width: 1280, height: 720 },
-    settings: { showGrid: true, animation: 'slow', uiScale: 100 },
-    features: {
-      layers: [
-        { id: 'roads', name: 'Roads', visible: true, locked: false, sortIndex: 0 },
-        {
-          id: 'settlements',
-          name: 'Settlements',
-          visible: true,
-          locked: false,
-          sortIndex: 1,
-          features: [
-            {
-              guid: 'settlement-emerald-haven',
-              icon: 'assets/icons/location/Bastle.svg',
-              position: { x: 0.25, y: 0.6 },
-              size: 32,
-              name: 'Emerald Haven',
-              description: 'A bustling riverside town known for its verdant terraces.',
-              url: '#emerald-haven',
-            },
-            {
-              guid: 'settlement-crimson-hold',
-              icon: 'assets/icons/location/Bastion.svg',
-              position: { x: 0.55, y: 0.45 },
-              size: 36,
-              name: 'Crimson Hold',
-              description: 'A fortified keep perched on the hill overlooking the valley.',
-              url: '#crimson-hold',
-            },
-            {
-              guid: 'settlement-moonlit-harbor',
-              icon: 'assets/icons/location/Village.svg',
-              position: { x: 0.7, y: 0.75 },
-              size: 30,
-              name: 'Moonlit Harbor',
-              description: 'A lively port famous for its night markets and lantern festivals.',
-              url: '#moonlit-harbor',
-            },
-          ],
-        },
-        {
-          id: 'points',
-          name: 'Points of Interest',
-          visible: true,
-          locked: false,
-          sortIndex: 2,
-          features: [
-            {
-              guid: 'poi-watchtower',
-              icon: 'assets/icons/location/Tower.svg',
-              position: { x: 0.4, y: 0.2 },
-              size: 28,
-              name: 'Azure Watchtower',
-              description: 'A lone watchtower keeping vigil over the northern frontier.',
-              url: '#azure-watchtower',
-            },
-            {
-              guid: 'poi-shrine',
-              icon: 'assets/icons/location/Hut.svg',
-              position: { x: 0.85, y: 0.55 },
-              size: 28,
-              name: 'Lotus Shrine',
-              description: 'A secluded shrine said to bless travellers with safe passage.',
-              url: '#lotus-shrine',
-            },
-          ],
-        },
-      ],
+      settings: { showGrid: true, animation: 'slow', uiScale: 100 },
       activeLayerId: 'roads',
-    },
-    tool: 'pan',
+      tool: 'pan',
+      terrainVisible: true,
+      terrainLocked: false,
+      pathsVisible: true,
+      pathsLocked: false,
+    paths: [
+      { id: 'road001', type: 'road', width: 8 }
+    ],    
+    layers: [
+      { id: 'roads', name: 'Roads', visible: true, locked: false, sortIndex: 0 },
+      {
+              id: 'settlements',
+              name: 'Settlements',
+              visible: true,
+              locked: false,
+              sortIndex: 1,
+              features: [
+                  {
+                      guid: 'settlement-emerald-haven',
+                      icon: 'assets/icons/location/Bastle.svg',
+                      position: { x: 0.25, y: 0.6 },
+                      size: 32,
+                      name: 'Emerald Haven',
+                      description: 'A bustling riverside town known for its verdant terraces.',
+                      url: '#emerald-haven',
+                  },
+                  {
+                      guid: 'settlement-crimson-hold',
+                      icon: 'assets/icons/location/Bastion.svg',
+                      position: { x: 0.55, y: 0.45 },
+                      size: 36,
+                      name: 'Crimson Hold',
+                      description: 'A fortified keep perched on the hill overlooking the valley.',
+                      url: '#crimson-hold',
+                  },
+                  {
+                      guid: 'settlement-moonlit-harbor',
+                      icon: 'assets/icons/location/Village.svg',
+                      position: { x: 0.7, y: 0.75 },
+                      size: 30,
+                      name: 'Moonlit Harbor',
+                      description: 'A lively port famous for its night markets and lantern festivals.',
+                      url: '#moonlit-harbor',
+                  },
+              ],
+          },
+      {
+              id: 'points',
+              name: 'Points of Interest',
+              visible: true,
+              locked: false,
+              sortIndex: 2,
+              features: [
+                  {
+                      guid: 'poi-watchtower',
+                      icon: 'assets/icons/location/Tower.svg',
+                      position: { x: 0.4, y: 0.2 },
+                      size: 28,
+                      name: 'Azure Watchtower',
+                      description: 'A lone watchtower keeping vigil over the northern frontier.',
+                      url: '#azure-watchtower',
+                  },
+                  {
+                      guid: 'poi-shrine',
+                      icon: 'assets/icons/location/Hut.svg',
+                      position: { x: 0.85, y: 0.55 },
+                      size: 28,
+                      name: 'Lotus Shrine',
+                      description: 'A secluded shrine said to bless travellers with safe passage.',
+                      url: '#lotus-shrine',
+                  },
+              ],
+          },
+      ],
   });
 
   function loadState() {
@@ -114,8 +119,8 @@
           return mergedLayer;
         });
       }
-      if (typeof parsedState.features.activeLayerId === 'undefined') {
-        parsedState.features.activeLayerId = defaults.features.activeLayerId;
+      if (typeof parsedState.activeLayerId === 'undefined') {
+        parsedState.activeLayerId = defaults.features.activeLayerId;
       }
 
       return parsedState;
@@ -157,8 +162,8 @@
     return entry.layer;
   });
 
-  if (typeof state.features.activeLayerId === 'undefined') {
-    state.features.activeLayerId = defaults.features.activeLayerId;
+  if (typeof state.activeLayerId === 'undefined') {
+    state.activeLayerId = defaults.activeLayerId;
   }
   state.features.layers.forEach((layer) => {
     if (layer?.id) {
