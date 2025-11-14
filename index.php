@@ -30,6 +30,7 @@
   <script src="scripts/gui/landmark-controls.js"></script>
   <script src="scripts/gui/layer-panel.js"></script>
   <script src="scripts/gui/toolbar.js"></script>
+  <script src="scripts/gui/debug.js"></script>
   <script src="scripts/gui/index.js"></script>
   <script src="scripts/settings.js"></script>
   <script src="scripts/main.js"></script>

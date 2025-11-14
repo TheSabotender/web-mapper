@@ -8,7 +8,13 @@
     }
   }
 
+  function formatToggle(value) {
+    return value ? 'ON' : 'OFF';
+  }
+
   function RenderGUI(ctx, state) {
+    WebMapper.ui?.debugPanel?.update?.(state);
+
     if (!ctx) return;
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -18,32 +24,57 @@
     }
 
     const activeTool = state?.tool ?? 'N/A';
-    const features = state?.features ?? {};
-    const featureSummary = [
-      `Roads: ${features.roads ? 'ON' : 'OFF'}`,
-      `Settlements: ${features.settlements ? 'ON' : 'OFF'}`,
-      `Points: ${features.points ? 'ON' : 'OFF'}`,
-    ].join(', ');
+    const activeLayer = state?.activeLayerId ?? 'N/A';
+    const terrainVisible = Boolean(state?.terrainVisible);
+    const terrainLocked = Boolean(state?.terrainLocked);
+    const pathsVisible = Boolean(state?.pathsVisible);
+    const pathsLocked = Boolean(state?.pathsLocked);
+
+    const lines = [
+      { font: '16px "Segoe UI", sans-serif', text: `Tool: ${activeTool}` },
+      { font: '13px "Segoe UI", sans-serif', text: `Active layer: ${activeLayer}` },
+      {
+        font: '13px "Segoe UI", sans-serif',
+        text: `Terrain → Visible: ${formatToggle(terrainVisible)} · Locked: ${formatToggle(
+          terrainLocked
+        )}`,
+      },
+      {
+        font: '13px "Segoe UI", sans-serif',
+        text: `Paths → Visible: ${formatToggle(pathsVisible)} · Locked: ${formatToggle(
+          pathsLocked
+        )}`,
+      },
+    ];
 
     ctx.save();
-    ctx.font = '16px "Segoe UI", sans-serif';
-    const toolLabel = `Tool: ${activeTool}`;
-    const featureLabel = `Layers → ${featureSummary}`;
-    const toolWidth = ctx.measureText(toolLabel).width;
-    ctx.font = '13px "Segoe UI", sans-serif';
-    const featureWidth = ctx.measureText(featureLabel).width;
-    const boxWidth = Math.max(toolWidth, featureWidth) + 32;
+
+    const paddingX = 16;
+    const paddingY = 16;
+    const lineSpacing = 20;
+    let maxWidth = 0;
+
+    lines.forEach((line) => {
+      ctx.font = line.font;
+      const width = ctx.measureText(line.text).width;
+      if (width > maxWidth) {
+        maxWidth = width;
+      }
+    });
+
+    const boxWidth = maxWidth + paddingX * 2;
+    const boxHeight = paddingY * 2 + lineSpacing * lines.length;
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.fillRect(16, 16, boxWidth, 60);
+    ctx.fillRect(16, 16, boxWidth, boxHeight);
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '16px "Segoe UI", sans-serif';
-    ctx.fillText(toolLabel, 32, 44);
-
-    ctx.font = '13px "Segoe UI", sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-    ctx.fillText(featureLabel, 32, 68);
+    let currentY = 16 + paddingY + 4;
+    lines.forEach((line, index) => {
+      ctx.font = line.font;
+      ctx.fillStyle = index === 0 ? '#ffffff' : 'rgba(255, 255, 255, 0.8)';
+      ctx.fillText(line.text, 16 + paddingX, currentY);
+      currentY += lineSpacing;
+    });
 
     ctx.restore();
   }
@@ -218,7 +249,10 @@
     const state = (WebMapper.state = WebMapper.state || {});
     const toolControls = bindToolControls(state);
     ui.Toolbar?.init?.({ state, toolControls, requestRender });
-    ui.LayerPanel?.init?.({ state, requestRender });
+    const layerPanel = ui.LayerPanel?.init?.({ state, requestRender });
+    if (layerPanel) {
+      ui.layerPanelControls = layerPanel;
+    }
     const uiScale = state.settings?.uiScale ?? WebMapper.defaults?.settings?.uiScale ?? 100;
     ui.applyUiScale(uiScale);
   }
