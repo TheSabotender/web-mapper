@@ -10,6 +10,7 @@
   --shadow-overlay: 0 16px 40px rgba(0, 0, 0, 0.45);
   --transition-base: 0.18s ease-in-out;
   --panel-radius: 16px;
+  --ui-scale: 1;
 }
 
 *,
@@ -74,7 +75,8 @@ body {
   position: fixed;
   left: 50%;
   bottom: 32px;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(var(--ui-scale));
+  transform-origin: center bottom;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -82,8 +84,24 @@ body {
   z-index: 10;
 }
 
-.tool-controls {
+.toolbar-stack__controls {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.tool-controls-wrapper {
+  position: relative;
   width: min(760px, calc(100vw - 48px));
+  height: 0;
+  padding-bottom: calc(2.125rem + 0.75rem);
+}
+
+.tool-controls {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 100%;
   display: flex;
   align-items: center;
   padding: 0.75rem 1rem;
@@ -94,20 +112,20 @@ body {
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(16px);
   opacity: 0;
-  transform: translateY(12px);
+  transform: translate(-50%, 12px) scale(0.5);
   pointer-events: none;
   transition: opacity var(--transition-base), transform var(--transition-base);
 }
 
 .tool-controls.is-visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(-50%, 0) scale(0.5);
   pointer-events: auto;
 }
 
 .tool-controls.is-leaving {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translate(-50%, 20px) scale(0.5);
   pointer-events: none;
 }
 
@@ -118,11 +136,11 @@ body {
 @keyframes tool-controls-enter {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translate(-50%, 12px) scale(0.5);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(-50%, 0) scale(0.5);
   }
 }
 
@@ -425,6 +443,8 @@ body {
   backdrop-filter: blur(12px);
   z-index: 11;
   cursor: default;
+  transform: scale(var(--ui-scale));
+  transform-origin: top left;
 }
 
 .floating-panel.is-dragging {
@@ -526,6 +546,8 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow-overlay);
   overflow: hidden;
+  transform: scale(var(--ui-scale));
+  transform-origin: top center;
 }
 
 .settings-modal__header {
@@ -572,6 +594,30 @@ body {
   gap: 1rem;
   font-size: 0.95rem;
   color: var(--color-text);
+}
+
+.settings-form__row--range {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.settings-form__range {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.settings-form__range input[type='range'] {
+  flex: 1 1 auto;
+  accent-color: var(--color-accent);
+}
+
+.settings-form__range-value {
+  min-width: 3.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .settings-form__row input,
