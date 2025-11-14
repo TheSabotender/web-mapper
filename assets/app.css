@@ -1,0 +1,306 @@
+:root {
+  --color-background: #1f2330;
+  --color-surface: #272c3a;
+  --color-surface-alt: #32394c;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-text: #f5f6fa;
+  --color-muted: rgba(245, 246, 250, 0.65);
+  --color-accent: #4f8bff;
+  --color-accent-strong: #2f6ff2;
+  --shadow-overlay: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --sidebar-width: 320px;
+  --transition-base: 0.18s ease-in-out;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--color-background);
+  color: var(--color-text);
+  font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  display: flex;
+}
+
+.app {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  max-width: 100vw;
+}
+
+.app__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(12px);
+}
+
+.app__title {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+}
+
+.app__body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.app__sidebar {
+  width: var(--sidebar-width);
+  padding: 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+}
+
+.app__main {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.canvas-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.08) 0%, rgba(79, 139, 255, 0.08) 40%, transparent 70%),
+    #131722;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+.map-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.panel__title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.panel__group {
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--color-surface);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.panel__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  display: block;
+}
+
+.panel__input,
+.panel__buttons .button,
+.panel__checkbox input,
+.panel__checkbox span {
+  font-size: 0.95rem;
+}
+
+.panel__input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.panel__buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.panel__buttons .button.is-active {
+  background: var(--color-accent);
+  border-color: transparent;
+  color: #fff;
+}
+
+.panel__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--color-text);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--transition-base), transform var(--transition-base);
+}
+
+.button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button--primary {
+  background: var(--color-accent);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+
+.button--primary:hover {
+  background: var(--color-accent-strong);
+}
+
+.button--icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 1.5rem;
+  line-height: 1;
+  border-radius: 50%;
+}
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 12, 20, 0.68);
+  z-index: 100;
+  padding: 2rem;
+}
+
+.settings-overlay[aria-hidden="false"] {
+  display: flex;
+}
+
+.settings-modal {
+  width: min(480px, 100%);
+  background: var(--color-surface);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-overlay);
+  overflow: hidden;
+}
+
+.settings-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.settings-modal__title {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.settings-modal__body {
+  padding: 1.5rem;
+}
+
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.settings-form__section {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface-alt);
+}
+
+.settings-form__section legend {
+  padding: 0 0.4rem;
+  font-size: 0.95rem;
+  color: var(--color-muted);
+}
+
+.settings-form__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.95rem;
+  color: var(--color-text);
+}
+
+.settings-form__row input,
+.settings-form__row select {
+  flex: 0 0 140px;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.settings-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .app__body {
+    flex-direction: column;
+  }
+
+  .app__sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .app__main {
+    padding: 1rem;
+  }
+}
