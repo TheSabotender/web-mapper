@@ -26,6 +26,7 @@
   <script src="scripts/gui/pan-controls.js"></script>
   <script src="scripts/gui/brush-controls.js"></script>
   <script src="scripts/gui/eraser-controls.js"></script>
+  <script src="scripts/gui/landmark-icon-picker.js"></script>
   <script src="scripts/gui/landmark-controls.js"></script>
   <script src="scripts/gui/layer-panel.js"></script>
   <script src="scripts/gui/toolbar.js"></script>
