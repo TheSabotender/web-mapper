@@ -4,7 +4,17 @@
   const defaults = (WebMapper.defaults = WebMapper.defaults || {
     canvas: { width: 1280, height: 720 },
     settings: { showGrid: true, animation: 'none', uiScale: 100 },
-    features: { roads: true, settlements: true, points: true },
+    features: {
+      roads: true,
+      settlements: true,
+      points: true,
+      layers: [
+        { id: 'roads', name: 'Roads', visible: true, locked: false },
+        { id: 'settlements', name: 'Settlements', visible: true, locked: false },
+        { id: 'points', name: 'Points of Interest', visible: true, locked: false },
+      ],
+      activeLayerId: 'roads',
+    },
     tool: 'brush',
   });
 

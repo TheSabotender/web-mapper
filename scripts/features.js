@@ -1,8 +1,21 @@
 (function () {
   const WebMapper = (window.WebMapper = window.WebMapper || {});
 
+  function isLayerVisible(state, layerId) {
+    if (!state) return true;
+    const layers = state.features?.layers;
+    if (Array.isArray(layers)) {
+      const layer = layers.find((entry) => entry.id === layerId);
+      if (layer) {
+        return Boolean(layer.visible);
+      }
+    }
+    const value = state.features?.[layerId];
+    return typeof value === 'boolean' ? value : true;
+  }
+
   function drawRoads(ctx, state, width, height) {
-    if (!state?.features?.roads) return;
+    if (!isLayerVisible(state, 'roads')) return;
 
     ctx.save();
     ctx.lineWidth = 8;
@@ -25,7 +38,7 @@
   }
 
   function drawSettlements(ctx, state, width, height) {
-    if (!state?.features?.settlements) return;
+    if (!isLayerVisible(state, 'settlements')) return;
 
     ctx.save();
     ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
@@ -49,7 +62,7 @@
   }
 
   function drawPointsOfInterest(ctx, state, width, height) {
-    if (!state?.features?.points) return;
+    if (!isLayerVisible(state, 'points')) return;
 
     ctx.save();
     ctx.fillStyle = 'rgba(79, 139, 255, 0.9)';
