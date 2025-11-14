@@ -78,6 +78,7 @@
     function render() {
       container.classList.toggle('is-pan-tool', state.tool === 'pan');
       container.classList.toggle('is-panning-active', isPanning);
+      WebMapper.ui?.toolControls?.setActiveTool?.(state.tool);
       window.RenderTerrain?.(contexts.terrain, state);
       window.RenderFeatures?.(contexts.features, state);
       window.RenderGUI?.(contexts.gui, state);
