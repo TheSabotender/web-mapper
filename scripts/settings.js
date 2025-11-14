@@ -24,10 +24,45 @@
       WebMapper.utils?.clamp ||
       ((value, min, max) => Math.min(Math.max(value, min), max));
 
+    let initialUiScale = null;
+    let previewUiScale = null;
+
+    function normalizeUiScale(value) {
+      return clamp(Number(value) || 100, 25, 200);
+    }
+
     function updateUiScaleDisplay(value) {
       if (!uiScaleValue) return;
-      const normalized = clamp(Number(value) || 100, 25, 200);
+      const normalized = normalizeUiScale(value);
       uiScaleValue.textContent = `${normalized}%`;
+    }
+
+    function applyUiScalePreview(value) {
+      const normalized = normalizeUiScale(value);
+      previewUiScale = normalized;
+      WebMapper.ui?.applyUiScale?.(normalized);
+    }
+
+    function resetUiScalePreview() {
+      if (previewUiScale === null) return;
+      if (initialUiScale !== null) {
+        WebMapper.ui?.applyUiScale?.(initialUiScale);
+      }
+      previewUiScale = null;
+    }
+
+    function openOverlay() {
+      syncForm();
+      initialUiScale = normalizeUiScale(uiScaleInput?.value);
+      previewUiScale = null;
+      setOverlayVisible(overlay, true);
+    }
+
+    function closeOverlay({ revertPreview = true } = {}) {
+      if (revertPreview) {
+        resetUiScalePreview();
+      }
+      setOverlayVisible(overlay, false);
     }
 
     function syncForm() {
@@ -45,27 +80,26 @@
       }
     }
 
-    openButton?.addEventListener('click', () => {
-      syncForm();
-      setOverlayVisible(overlay, true);
-    });
+    openButton?.addEventListener('click', openOverlay);
 
-    closeButton?.addEventListener('click', () => setOverlayVisible(overlay, false));
+    closeButton?.addEventListener('click', () => closeOverlay());
 
     overlay?.addEventListener('click', (event) => {
       if (event.target === overlay) {
-        setOverlayVisible(overlay, false);
+        closeOverlay();
       }
     });
 
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        setOverlayVisible(overlay, false);
+      if (event.key === 'Escape' && overlay && !overlay.hidden) {
+        closeOverlay();
       }
     });
 
     uiScaleInput?.addEventListener('input', (event) => {
-      updateUiScaleDisplay(event.target.value);
+      const value = event.target.value;
+      updateUiScaleDisplay(value);
+      applyUiScalePreview(value);
     });
 
     applyButton?.addEventListener('click', () => {
@@ -74,7 +108,7 @@
 
       const width = Number(widthInput.value);
       const height = Number(heightInput.value);
-      const uiScale = clamp(Number(uiScaleInput?.value) || 100, 25, 200);
+      const uiScale = normalizeUiScale(uiScaleInput?.value);
 
       state.settings = state.settings || {};
       state.canvas = state.canvas || {};
@@ -101,7 +135,10 @@
 
       WebMapper.ui?.applyUiScale?.(uiScale);
 
-      setOverlayVisible(overlay, false);
+      initialUiScale = uiScale;
+      previewUiScale = null;
+
+      closeOverlay({ revertPreview: false });
     });
 
     resetButton?.addEventListener('click', () => {
@@ -115,6 +152,7 @@
       if (uiScaleInput) {
         uiScaleInput.value = String(defaults.settings.uiScale);
         updateUiScaleDisplay(defaults.settings.uiScale);
+        applyUiScalePreview(defaults.settings.uiScale);
       }
     });
   }
