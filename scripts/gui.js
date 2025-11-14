@@ -12,6 +12,10 @@
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
+    if (!state?.debug) {
+      return;
+    }
+
     const activeTool = state?.tool ?? 'N/A';
     const features = state?.features ?? {};
     const featureSummary = [
@@ -160,10 +164,12 @@
     ensurePosition();
     syncMinimized();
 
-    toggleButton?.addEventListener('click', () => {
+    function toggleMinimized() {
       panelState.minimized = !panelState.minimized;
       syncMinimized();
-    });
+    }
+
+    toggleButton?.addEventListener('click', toggleMinimized);
 
     header?.addEventListener('pointerdown', (event) => {
       if (event.button !== 0) return;
@@ -199,6 +205,11 @@
 
     header?.addEventListener('pointerup', endDrag);
     header?.addEventListener('pointercancel', endDrag);
+
+    header?.addEventListener('dblclick', (event) => {
+      if (event.target.closest('[data-action]')) return;
+      toggleMinimized();
+    });
 
     window.addEventListener('resize', () => {
       if (!panelState.position) return;
