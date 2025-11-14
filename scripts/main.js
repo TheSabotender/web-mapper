@@ -1,100 +1,86 @@
-// assets/main.js
+(function () {
+  const WebMapper = (window.WebMapper = window.WebMapper || {});
 
-const STORAGE_KEY = 'webMapperStateV1';
+  const defaults = (WebMapper.defaults = WebMapper.defaults || {
+    canvas: { width: 1280, height: 720 },
+    settings: { showGrid: true, animation: 'none' },
+    features: { roads: true, settlements: true, points: true },
+    tool: 'brush',
+    terrainPreset: 'grass',
+  });
 
-const DEFAULT_STATE = {
-  settings: {
-    audioVolume: '0.5',
-    audioMuted: false,
-    qualityLevel: 1
-  },
-  map: 
-  {
-    name: 'starterMap'
-  }
-};
+  const state = (WebMapper.state = WebMapper.state || {});
+  state.canvas = Object.assign({}, defaults.canvas, state.canvas);
+  state.settings = Object.assign({}, defaults.settings, state.settings);
+  state.features = Object.assign({}, defaults.features, state.features);
+  state.tool = state.tool || defaults.tool;
+  state.terrainPreset = state.terrainPreset || defaults.terrainPreset;
 
-let state = null;
+  document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('canvas-stack');
+    if (!container) return;
 
-function uid(prefix) {
-  return prefix + '-' + Math.random().toString(36).slice(2, 9);
-}
+    const terrainCanvas = WebMapper.utils.createLayerCanvas('terrain-layer', container);
+    const featuresCanvas = WebMapper.utils.createLayerCanvas('features-layer', container);
+    const guiCanvas = WebMapper.utils.createLayerCanvas('gui-layer', container);
 
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return structuredClone(DEFAULT_STATE);
-    const parsed = JSON.parse(raw);
+    const contexts = {
+      terrain: terrainCanvas.getContext('2d'),
+      features: featuresCanvas.getContext('2d'),
+      gui: guiCanvas.getContext('2d'),
+    };
 
-    if (!parsed.settings) parsed.settings = {};
+    function resize(width, height) {
+      const rect = container.getBoundingClientRect();
+      const targetWidth = Math.max(320, Math.floor(width ?? rect.width) || defaults.canvas.width);
+      const targetHeight = Math.max(240, Math.floor(height ?? rect.height) || defaults.canvas.height);
 
-    if (!parsed.settings.tabBarPosition) parsed.settings.tabBarPosition = 'bottom';
-    if (typeof parsed.settings.backgroundUrl !== 'string') parsed.settings.backgroundUrl = '';
-    if (!parsed.settings.backgroundMode) parsed.settings.backgroundMode = 'envelop';
-    if (typeof parsed.settings.backgroundOpacity !== 'number') parsed.settings.backgroundOpacity = 1;
-    if (typeof parsed.settings.backgroundColor !== 'string') parsed.settings.backgroundColor = '#1e1f22';
-    if (typeof parsed.settings.backgroundVideoMuted !== 'boolean') parsed.settings.backgroundVideoMuted = true;
+      WebMapper.utils.resizeCanvas(terrainCanvas, targetWidth, targetHeight);
+      WebMapper.utils.resizeCanvas(featuresCanvas, targetWidth, targetHeight);
+      WebMapper.utils.resizeCanvas(guiCanvas, targetWidth, targetHeight);
 
-    if (!parsed.tabs || !parsed.tabs.length) {
-      parsed.tabs = structuredClone(DEFAULT_STATE.tabs);
-      parsed.activeTabId = parsed.tabs[0].id;
+      state.canvas.width = targetWidth;
+      state.canvas.height = targetHeight;
     }
 
-    return parsed;
-  } catch (e) {
-    console.warn('Failed to load state:', e);
-    return structuredClone(DEFAULT_STATE);
-  }
-}
-
-function saveState() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (e) {
-    console.warn('Failed to save state:', e);
-  }
-}
-
-function renderAll(context) {
-  renderTerrain(context);
-  renderFeatures(context);
-  renderGUI(context);
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const context = {
-    elements: {
-      appRoot: document.getElementById('app-root'),      
-      settingsOverlay: document.getElementById('settings-overlay'),
-      settingsClose: document.getElementById('settings-close'),
-      exportJsonBtn: document.getElementById('export-json-btn'),
-      importJsonFile: document.getElementById('import-json-file'),
-      audioVolumeSlider: document.getElementById('audio-volume-slider'),
-      audioVolumeValue: document.getElementById('audio-volume-value'),      
-    },
-    getState: () => state,
-    setState: value => {
-      state = value;
-    },
-    getDefaultState: () => structuredClone(DEFAULT_STATE),
-    uid,
-    saveState: () => saveState(),
-    loadState: () => loadState(),
-    renderAll: () => renderAll(context),
-    renderTerrain: () => renderTerrain(context),
-    renderFeatures: () => renderFeatures(context),
-    renderGUI: () => renderGUI(context),
-    renderSettings: () => renderSettings(context),
-    messages: Messages
-  };
-
-  state = loadState();
-
-    if (state.map) {
-        setupMap(context);
+    function render() {
+      window.RenderTerrain?.(contexts.terrain, state);
+      window.RenderFeatures?.(contexts.features, state);
+      window.RenderGUI?.(contexts.gui, state);
     }
-  
-  setupSettings(context);
 
-  renderAll(context);
-});
+    let animationTimer = null;
+    function updateAnimationLoop() {
+      if (animationTimer) {
+        window.clearInterval(animationTimer);
+        animationTimer = null;
+      }
+
+      if (state.settings.animation === 'none') {
+        return;
+      }
+
+      const interval = state.settings.animation === 'fast' ? 1000 / 30 : 1000 / 12;
+      animationTimer = window.setInterval(render, interval);
+    }
+
+    WebMapper.resize = (width, height) => {
+      resize(width, height);
+      render();
+    };
+    WebMapper.render = render;
+    WebMapper.updateAnimation = () => {
+      updateAnimationLoop();
+      render();
+    };
+
+    resize(state.canvas.width, state.canvas.height);
+    render();
+    updateAnimationLoop();
+
+    window.addEventListener('resize', () => {
+      resize();
+      render();
+    });
+  });
+})();
