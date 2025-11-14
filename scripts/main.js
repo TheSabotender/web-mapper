@@ -1,5 +1,9 @@
 (function () {
   const WebMapper = (window.WebMapper = window.WebMapper || {});
+  const runtime = (WebMapper.runtime = WebMapper.runtime || {});
+  runtime.renderedFeatures = Array.isArray(runtime.renderedFeatures)
+    ? runtime.renderedFeatures
+    : [];
 
   const STORAGE_KEY = 'webMapperStateV1';
 
@@ -9,8 +13,69 @@
     features: {
       layers: [
         { id: 'roads', name: 'Roads', visible: true, locked: false, sortIndex: 0 },
-        { id: 'settlements', name: 'Settlements', visible: true, locked: false, sortIndex: 1 },
-        { id: 'points', name: 'Points of Interest', visible: true, locked: false, sortIndex: 2 },
+        {
+          id: 'settlements',
+          name: 'Settlements',
+          visible: true,
+          locked: false,
+          sortIndex: 1,
+          features: [
+            {
+              guid: 'settlement-emerald-haven',
+              icon: 'assets/icons/location/castle.svg',
+              position: { x: 0.25, y: 0.6 },
+              size: 32,
+              name: 'Emerald Haven',
+              description: 'A bustling riverside town known for its verdant terraces.',
+              url: '#emerald-haven',
+            },
+            {
+              guid: 'settlement-crimson-hold',
+              icon: 'assets/icons/location/castle.svg',
+              position: { x: 0.55, y: 0.45 },
+              size: 36,
+              name: 'Crimson Hold',
+              description: 'A fortified keep perched on the hill overlooking the valley.',
+              url: '#crimson-hold',
+            },
+            {
+              guid: 'settlement-moonlit-harbor',
+              icon: 'assets/icons/location/castle.svg',
+              position: { x: 0.7, y: 0.75 },
+              size: 30,
+              name: 'Moonlit Harbor',
+              description: 'A lively port famous for its night markets and lantern festivals.',
+              url: '#moonlit-harbor',
+            },
+          ],
+        },
+        {
+          id: 'points',
+          name: 'Points of Interest',
+          visible: true,
+          locked: false,
+          sortIndex: 2,
+          features: [
+            {
+              guid: 'poi-watchtower',
+              icon: 'assets/icons/location/castle.svg',
+              position: { x: 0.4, y: 0.2 },
+              size: 28,
+              name: 'Azure Watchtower',
+              description: 'A lone watchtower keeping vigil over the northern frontier.',
+              url: '#azure-watchtower',
+            },
+            {
+              guid: 'poi-shrine',
+              icon: 'assets/icons/location/castle.svg',
+              position: { x: 0.85, y: 0.55 },
+              size: 28,
+              name: 'Lotus Shrine',
+              description: 'A secluded shrine said to bless travellers with safe passage.',
+              url: '#lotus-shrine',
+            },
+          ],
+        },
       ],
       activeLayerId: 'roads',
     },
@@ -30,6 +95,24 @@
       parsedState.features = parsedState.features || {};
       if (!parsedState.features.layers || !Array.isArray(parsedState.features.layers)) {
         parsedState.features.layers = structuredClone(defaults.features.layers);
+      } else {
+        const defaultLayersById = new Map(
+          defaults.features.layers.map((layer) => [layer.id, layer])
+        );
+
+        parsedState.features.layers = parsedState.features.layers.map((layer) => {
+          const defaultLayer = defaultLayersById.get(layer?.id);
+          if (!defaultLayer) {
+            return layer;
+          }
+
+          const mergedLayer = { ...structuredClone(defaultLayer), ...layer };
+          if (Array.isArray(layer?.features)) {
+            mergedLayer.features = layer.features.map((feature) => structuredClone(feature));
+          }
+
+          return mergedLayer;
+        });
       }
       if (typeof parsedState.features.activeLayerId === 'undefined') {
         parsedState.features.activeLayerId = defaults.features.activeLayerId;
@@ -199,6 +282,46 @@
       return event.button === 0 && state.tool === 'pan';
     }
 
+    function setHoveredFeature(next) {
+      const current = runtime.hoveredFeature;
+      const isSame =
+        current?.layerId === next?.layerId && current?.guid === next?.guid;
+      if (isSame) {
+        return;
+      }
+
+      runtime.hoveredFeature = next || null;
+      render();
+    }
+
+    function updateHoveredFeatureFromPointer(event) {
+      const renderedFeatures = runtime.renderedFeatures;
+      if (!Array.isArray(renderedFeatures) || renderedFeatures.length === 0) {
+        return;
+      }
+
+      const rect = container.getBoundingClientRect();
+      const pointerX = event.clientX - rect.left;
+      const pointerY = event.clientY - rect.top;
+      const worldX = view.x + pointerX / view.zoom;
+      const worldY = view.y + pointerY / view.zoom;
+
+      const nextHover = renderedFeatures.find((entry) => {
+        const size = Number(entry.size) || 24;
+        const halfSize = Math.max(size * 0.6, 12);
+        return (
+          Math.abs(worldX - entry.x) <= halfSize &&
+          Math.abs(worldY - entry.y) <= halfSize
+        );
+      });
+
+      if (!nextHover) {
+        setHoveredFeature(null);
+      } else {
+        setHoveredFeature({ layerId: nextHover.layerId, guid: nextHover.guid });
+      }
+    }
+
     function startPan(event) {
       isPanning = true;
       activePointerId = event.pointerId;
@@ -230,16 +353,19 @@
       }
       activePointerId = null;
       pointerCaptureTarget = null;
+      setHoveredFeature(null);
       render();
     }
 
     container.addEventListener('pointerdown', (event) => {
       if (!shouldStartPan(event)) {
+        updateHoveredFeatureFromPointer(event);
         return;
       }
 
       event.preventDefault();
       startPan(event);
+      setHoveredFeature(null);
 
       pointerCaptureTarget = event.target;
       if (pointerCaptureTarget && typeof pointerCaptureTarget.setPointerCapture === 'function') {
@@ -250,23 +376,30 @@
     container.addEventListener(
       'pointermove',
       (event) => {
-        if (!isPanning || event.pointerId !== activePointerId) {
+        const isActivePan = isPanning && event.pointerId === activePointerId;
+        if (isActivePan) {
+          event.preventDefault();
+
+          const deltaX = event.clientX - startPointer.x;
+          const deltaY = event.clientY - startPointer.y;
+          view.x = startPointer.viewX - deltaX / startPointer.zoom;
+          view.y = startPointer.viewY - deltaY / startPointer.zoom;
+          render();
           return;
         }
 
-        event.preventDefault();
-
-        const deltaX = event.clientX - startPointer.x;
-        const deltaY = event.clientY - startPointer.y;
-        view.x = startPointer.viewX - deltaX / startPointer.zoom;
-        view.y = startPointer.viewY - deltaY / startPointer.zoom;
-        render();
+        if (!isPanning) {
+          updateHoveredFeatureFromPointer(event);
+        }
       },
       { passive: false }
     );
 
     container.addEventListener('pointerup', (event) => {
       if (event.pointerId !== activePointerId) {
+        if (!isPanning) {
+          updateHoveredFeatureFromPointer(event);
+        }
         return;
       }
       endPan();
@@ -274,9 +407,18 @@
 
     container.addEventListener('pointercancel', (event) => {
       if (event.pointerId !== activePointerId) {
+        if (!isPanning) {
+          updateHoveredFeatureFromPointer(event);
+        }
         return;
       }
       endPan();
+    });
+
+    container.addEventListener('pointerleave', () => {
+      if (!isPanning) {
+        setHoveredFeature(null);
+      }
     });
 
     container.addEventListener(
