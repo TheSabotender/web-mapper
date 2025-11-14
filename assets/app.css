@@ -1,15 +1,15 @@
 :root {
   --color-background: #1f2330;
-  --color-surface: #272c3a;
-  --color-surface-alt: #32394c;
+  --color-surface: rgba(27, 32, 45, 0.92);
+  --color-surface-alt: rgba(41, 47, 63, 0.92);
   --color-border: rgba(255, 255, 255, 0.08);
   --color-text: #f5f6fa;
   --color-muted: rgba(245, 246, 250, 0.65);
   --color-accent: #4f8bff;
   --color-accent-strong: #2f6ff2;
   --shadow-overlay: 0 16px 40px rgba(0, 0, 0, 0.45);
-  --sidebar-width: 320px;
   --transition-base: 0.18s ease-in-out;
+  --panel-radius: 16px;
 }
 
 *,
@@ -23,72 +23,35 @@ body {
   margin: 0;
   padding: 0;
   height: 100%;
+}
+
+body {
+  min-height: 100%;
   background: var(--color-background);
   color: var(--color-text);
   font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-body {
-  display: flex;
-}
-
 .app {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  max-width: 100vw;
-}
-
-.app__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--color-border);
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(12px);
-}
-
-.app__title {
-  margin: 0;
-  font-size: 1.25rem;
-  letter-spacing: 0.02em;
-}
-
-.app__body {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-}
-
-.app__sidebar {
-  width: var(--sidebar-width);
-  padding: 1.25rem;
-  background: rgba(255, 255, 255, 0.03);
-  border-right: 1px solid var(--color-border);
-  overflow-y: auto;
-}
-
-.app__main {
-  flex: 1;
   position: relative;
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  padding: 1.5rem;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .canvas-stack {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  min-height: 480px;
-  background: radial-gradient(circle at top, rgba(255, 255, 255, 0.08) 0%, rgba(79, 139, 255, 0.08) 40%, transparent 70%),
+  background: radial-gradient(
+      circle at top,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(79, 139, 255, 0.08) 40%,
+      transparent 70%
+    ),
     #131722;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
   overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
 
 .map-layer {
@@ -98,109 +61,159 @@ body {
   height: 100%;
 }
 
-.panel {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.panel__title {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.panel__group {
-  padding: 1rem;
-  border-radius: 12px;
-  background: var(--color-surface);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-.panel__label {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-muted);
-  display: block;
-}
-
-.panel__input,
-.panel__buttons .button,
-.panel__checkbox input,
-.panel__checkbox span {
-  font-size: 0.95rem;
-}
-
-.panel__input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: var(--color-surface-alt);
-  color: var(--color-text);
-}
-
-.panel__buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.panel__buttons .button.is-active {
-  background: var(--color-accent);
-  border-color: transparent;
-  color: #fff;
-}
-
-.panel__checkbox {
+.toolbar {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  color: var(--color-text);
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: rgba(18, 21, 31, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(14px);
+  z-index: 10;
 }
 
-.button {
+.toolbar__group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.toolbar__group--actions {
+  padding-left: 0.75rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.toolbar__button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  min-width: 2.75rem;
   padding: 0.45rem 0.9rem;
-  border-radius: 8px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--color-text);
+  font-size: 0.95rem;
   cursor: pointer;
   transition: background var(--transition-base), transform var(--transition-base);
 }
 
-.button:hover {
-  background: rgba(255, 255, 255, 0.08);
+.toolbar__button:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
-.button:active {
+.toolbar__button:active {
   transform: translateY(1px);
 }
 
-.button--primary {
+.toolbar__button.is-active,
+.toolbar__button[aria-pressed="true"] {
   background: var(--color-accent);
   border-color: transparent;
   color: #fff;
   font-weight: 600;
 }
 
-.button--primary:hover {
-  background: var(--color-accent-strong);
+.toolbar__button--icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 1.25rem;
+  padding: 0;
+  border-radius: 50%;
 }
 
-.button--icon {
+.floating-panel {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  width: min(280px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: var(--panel-radius);
+  background: var(--color-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-overlay);
+  backdrop-filter: blur(12px);
+  z-index: 11;
+  cursor: default;
+}
+
+.floating-panel.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.floating-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  cursor: grab;
+}
+
+.floating-panel__title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.floating-panel__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 2.25rem;
   height: 2.25rem;
-  font-size: 1.5rem;
-  line-height: 1;
-  border-radius: 50%;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--transition-base);
+}
+
+.floating-panel__button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.floating-panel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.floating-panel__checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+}
+
+.floating-panel.is-minimized .floating-panel__body {
+  display: none;
+}
+
+.floating-panel.is-dragging .floating-panel__header {
+  cursor: grabbing;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .settings-overlay {
@@ -289,18 +302,64 @@ body {
   gap: 0.75rem;
 }
 
-@media (max-width: 900px) {
-  .app__body {
-    flex-direction: column;
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: background var(--transition-base), transform var(--transition-base);
+}
+
+.button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button--primary {
+  background: var(--color-accent);
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+
+.button--primary:hover {
+  background: var(--color-accent-strong);
+}
+
+.button--icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 1.5rem;
+  line-height: 1;
+  border-radius: 50%;
+}
+
+@media (max-width: 720px) {
+  .toolbar {
+    bottom: 16px;
+    padding: 0.6rem 0.85rem;
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
   }
 
-  .app__sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: 1px solid var(--color-border);
+  .toolbar__group--actions {
+    border-left: none;
+    padding-left: 0;
   }
 
-  .app__main {
-    padding: 1rem;
+  .floating-panel {
+    right: 16px;
+    top: 16px;
+    width: min(260px, calc(100vw - 32px));
+    padding: 0.85rem;
   }
 }

@@ -6,7 +6,6 @@
     settings: { showGrid: true, animation: 'none' },
     features: { roads: true, settlements: true, points: true },
     tool: 'brush',
-    terrainPreset: 'grass',
   });
 
   const state = (WebMapper.state = WebMapper.state || {});
@@ -14,7 +13,6 @@
   state.settings = Object.assign({}, defaults.settings, state.settings);
   state.features = Object.assign({}, defaults.features, state.features);
   state.tool = state.tool || defaults.tool;
-  state.terrainPreset = state.terrainPreset || defaults.terrainPreset;
 
   document.addEventListener('DOMContentLoaded', () => {
     const container = document.getElementById('canvas-stack');
