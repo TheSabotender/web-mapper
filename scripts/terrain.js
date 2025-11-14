@@ -71,6 +71,14 @@
       ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     }
 
+    const terrainVisible =
+      state?.features?.terrainLayer?.visible ??
+      (typeof state?.features?.terrain === 'boolean' ? state.features.terrain : true);
+    if (!terrainVisible) {
+      restore?.();
+      return;
+    }
+
     const width = state?.canvas?.width ?? ctx.canvas.width;
     const height = state?.canvas?.height ?? ctx.canvas.height;
 
