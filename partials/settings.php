@@ -35,6 +35,21 @@
               <option value="fast">Fast</option>
             </select>
           </label>
+          <label class="settings-form__row settings-form__row--range">
+            <span>UI Scale</span>
+            <div class="settings-form__range">
+              <input
+                type="range"
+                id="settings-ui-scale"
+                min="25"
+                max="200"
+                step="5"
+                value="100"
+                aria-describedby="settings-ui-scale-value"
+              >
+              <output id="settings-ui-scale-value" class="settings-form__range-value">100%</output>
+            </div>
+          </label>
         </fieldset>
 
         <div class="settings-form__actions">
