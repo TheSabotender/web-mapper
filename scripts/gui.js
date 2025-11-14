@@ -1,5 +1,6 @@
 (function () {
   const WebMapper = (window.WebMapper = window.WebMapper || {});
+  const ui = (WebMapper.ui = WebMapper.ui || {});
 
   function requestRender() {
     if (typeof WebMapper.render === 'function') {
@@ -47,7 +48,357 @@
     ctx.restore();
   }
 
-  function bindToolButtons(state) {
+  function bindToolControls(state) {
+    const container = document.getElementById('tool-controls');
+    if (!container) {
+      return null;
+    }
+
+    const panels = Array.from(container.querySelectorAll('[data-tool-panel]'));
+    if (!panels.length) {
+      return null;
+    }
+
+    const utils = WebMapper.utils || {};
+    const clamp =
+      typeof utils.clamp === 'function'
+        ? utils.clamp
+        : (value, min, max) => Math.min(Math.max(value, min), max);
+
+    const stateView = (state.view = state.view || { x: 0, y: 0, zoom: 1 });
+    const toolsState = (state.tools = state.tools || {});
+    toolsState.pan = Object.assign({ zoom: stateView.zoom ?? 1 }, toolsState.pan);
+    toolsState.brush = Object.assign(
+      { size: 48, strength: 75, softness: 50, color: '#4f8bff' },
+      toolsState.brush
+    );
+    toolsState.eraser = Object.assign(
+      { size: 48, strength: 100, softness: 40 },
+      toolsState.eraser
+    );
+    toolsState.landmark = Object.assign(
+      { mode: 'select', scale: 1, imageName: '' },
+      toolsState.landmark
+    );
+
+    const outputs = new Map(
+      Array.from(container.querySelectorAll('[data-output-for]')).map((output) => [
+        output.dataset.outputFor,
+        output,
+      ])
+    );
+
+    const references = {
+      panZoom: container.querySelector('[data-control="pan-zoom"]'),
+      brushSize: container.querySelector('[data-control="brush-size"]'),
+      brushStrength: container.querySelector('[data-control="brush-strength"]'),
+      brushSoftness: container.querySelector('[data-control="brush-softness"]'),
+      brushColorButton: container.querySelector('[data-control="brush-color"]'),
+      brushColorPicker: container.querySelector('[data-picker-for="brush-color"]'),
+      eraserSize: container.querySelector('[data-control="eraser-size"]'),
+      eraserStrength: container.querySelector('[data-control="eraser-strength"]'),
+      eraserSoftness: container.querySelector('[data-control="eraser-softness"]'),
+      landmarkScale: container.querySelector('[data-control="landmark-scale"]'),
+      landmarkModeButtons: Array.from(
+        container.querySelectorAll('[data-control="landmark-mode"]')
+      ),
+      landmarkImageButton: container.querySelector('[data-control="landmark-image"]'),
+      landmarkImagePicker: container.querySelector('[data-picker-for="landmark-image"]'),
+      landmarkImageValue: container.querySelector('[data-file-value="landmark-image"]'),
+    };
+
+    function updateOutput(name, text) {
+      const output = outputs.get(name);
+      if (output) {
+        output.textContent = text;
+      }
+    }
+
+    function syncLandmarkMode() {
+      let mode = toolsState.landmark.mode;
+      if (mode !== 'select' && mode !== 'add') {
+        mode = 'select';
+        toolsState.landmark.mode = mode;
+      }
+      references.landmarkModeButtons.forEach((button) => {
+        const isActive = button.dataset.value === mode;
+        button.classList.toggle('is-active', isActive);
+        button.setAttribute('aria-pressed', String(isActive));
+      });
+    }
+
+    function syncControlValues() {
+      const view = state.view || stateView;
+
+      if (references.panZoom) {
+        const min = parseFloat(references.panZoom.min) || 0.5;
+        const max = parseFloat(references.panZoom.max) || 4;
+        const zoom = clamp(Number(view.zoom) || 1, min, max);
+        references.panZoom.value = String(zoom);
+        toolsState.pan.zoom = zoom;
+        view.zoom = zoom;
+        updateOutput('pan-zoom', `${Math.round(zoom * 100)}%`);
+      }
+
+      const brush = toolsState.brush;
+      if (references.brushSize) {
+        const min = parseFloat(references.brushSize.min) || 1;
+        const max = parseFloat(references.brushSize.max) || 200;
+        const raw = Number(brush.size);
+        const value = clamp(Number.isFinite(raw) ? Math.round(raw) : min, min, max);
+        references.brushSize.value = String(value);
+        updateOutput('brush-size', `${value} px`);
+        brush.size = value;
+      }
+      if (references.brushStrength) {
+        const value = clamp(Number(brush.strength) || 0, 0, 100);
+        references.brushStrength.value = String(value);
+        updateOutput('brush-strength', `${value}%`);
+        brush.strength = value;
+      }
+      if (references.brushSoftness) {
+        const value = clamp(Number(brush.softness) || 0, 0, 100);
+        references.brushSoftness.value = String(value);
+        updateOutput('brush-softness', `${value}%`);
+        brush.softness = value;
+      }
+      if (references.brushColorButton) {
+        const fallbackColor = '#4f8bff';
+        const color =
+          typeof brush.color === 'string' && /^#([0-9a-f]{6})$/i.test(brush.color)
+            ? brush.color
+            : fallbackColor;
+        brush.color = color;
+        references.brushColorButton.style.setProperty('--swatch-color', color);
+        if (references.brushColorPicker) {
+          references.brushColorPicker.value = color;
+        }
+      }
+
+      const eraser = toolsState.eraser;
+      if (references.eraserSize) {
+        const min = parseFloat(references.eraserSize.min) || 1;
+        const max = parseFloat(references.eraserSize.max) || 200;
+        const raw = Number(eraser.size);
+        const value = clamp(Number.isFinite(raw) ? Math.round(raw) : min, min, max);
+        references.eraserSize.value = String(value);
+        updateOutput('eraser-size', `${value} px`);
+        eraser.size = value;
+      }
+      if (references.eraserStrength) {
+        const value = clamp(Number(eraser.strength) || 0, 0, 100);
+        references.eraserStrength.value = String(value);
+        updateOutput('eraser-strength', `${value}%`);
+        eraser.strength = value;
+      }
+      if (references.eraserSoftness) {
+        const value = clamp(Number(eraser.softness) || 0, 0, 100);
+        references.eraserSoftness.value = String(value);
+        updateOutput('eraser-softness', `${value}%`);
+        eraser.softness = value;
+      }
+
+      if (references.landmarkScale) {
+        const min = parseFloat(references.landmarkScale.min) || 0.5;
+        const max = parseFloat(references.landmarkScale.max) || 3;
+        const raw = Number(toolsState.landmark.scale);
+        const value = clamp(Number.isFinite(raw) ? raw : 1, min, max);
+        references.landmarkScale.value = String(value);
+        updateOutput('landmark-scale', `${Math.round(value * 100)}%`);
+        toolsState.landmark.scale = value;
+      }
+
+      syncLandmarkMode();
+
+      if (references.landmarkImageValue) {
+        const name = toolsState.landmark.imageName || 'None';
+        references.landmarkImageValue.textContent = name;
+      }
+    }
+
+    let isTransitioning = false;
+    let pendingTool = null;
+
+    function activatePanel(tool) {
+      panels.forEach((panel) => {
+        const isActive = panel.dataset.toolPanel === tool;
+        panel.hidden = !isActive;
+      });
+    }
+
+    function showTool(tool, animate = false) {
+      if (!tool) return;
+      activatePanel(tool);
+      container.dataset.activeTool = tool;
+      container.classList.add('is-visible');
+      container.setAttribute('aria-hidden', 'false');
+      syncControlValues();
+      if (animate) {
+        container.classList.add('is-entering');
+        requestAnimationFrame(() => {
+          container.classList.remove('is-entering');
+        });
+      }
+    }
+
+    function setActiveTool(tool) {
+      if (!tool) return;
+      const currentTool = container.dataset.activeTool;
+      if (!currentTool) {
+        showTool(tool, true);
+        return;
+      }
+
+      if (currentTool === tool && !isTransitioning) {
+        syncControlValues();
+        return;
+      }
+
+      pendingTool = tool;
+
+      if (isTransitioning) {
+        return;
+      }
+
+      isTransitioning = true;
+      container.setAttribute('aria-hidden', 'true');
+      container.classList.add('is-leaving');
+    }
+
+    container.addEventListener('transitionend', (event) => {
+      if (event.target !== container || event.propertyName !== 'opacity') {
+        return;
+      }
+
+      if (!isTransitioning) {
+        return;
+      }
+
+      container.classList.remove('is-leaving');
+      const nextTool = pendingTool || container.dataset.activeTool;
+      pendingTool = null;
+      isTransitioning = false;
+      showTool(nextTool, true);
+    });
+
+    references.panZoom?.addEventListener('input', (event) => {
+      const min = parseFloat(event.target.min) || 0.5;
+      const max = parseFloat(event.target.max) || 4;
+      const value = clamp(parseFloat(event.target.value) || 1, min, max);
+      toolsState.pan.zoom = value;
+      stateView.zoom = value;
+      if (state.view) {
+        state.view.zoom = value;
+      }
+      syncControlValues();
+      requestRender();
+    });
+
+    references.brushSize?.addEventListener('input', (event) => {
+      const min = parseFloat(event.target.min) || 1;
+      const max = parseFloat(event.target.max) || 200;
+      const value = clamp(parseFloat(event.target.value) || min, min, max);
+      toolsState.brush.size = Math.round(value);
+      syncControlValues();
+      requestRender();
+    });
+
+    references.brushStrength?.addEventListener('input', (event) => {
+      toolsState.brush.strength = clamp(parseFloat(event.target.value) || 0, 0, 100);
+      syncControlValues();
+      requestRender();
+    });
+
+    references.brushSoftness?.addEventListener('input', (event) => {
+      toolsState.brush.softness = clamp(parseFloat(event.target.value) || 0, 0, 100);
+      syncControlValues();
+      requestRender();
+    });
+
+    const handleBrushColorChange = (value) => {
+      if (typeof value !== 'string' || !/^#([0-9a-f]{6})$/i.test(value)) {
+        return;
+      }
+      toolsState.brush.color = value;
+      syncControlValues();
+      requestRender();
+    };
+
+    references.brushColorButton?.addEventListener('click', () => {
+      references.brushColorPicker?.click();
+    });
+
+    references.brushColorPicker?.addEventListener('input', (event) => {
+      handleBrushColorChange(event.target.value);
+    });
+    references.brushColorPicker?.addEventListener('change', (event) => {
+      handleBrushColorChange(event.target.value);
+    });
+
+    references.eraserSize?.addEventListener('input', (event) => {
+      const min = parseFloat(event.target.min) || 1;
+      const max = parseFloat(event.target.max) || 200;
+      const value = clamp(parseFloat(event.target.value) || min, min, max);
+      toolsState.eraser.size = Math.round(value);
+      syncControlValues();
+      requestRender();
+    });
+
+    references.eraserStrength?.addEventListener('input', (event) => {
+      toolsState.eraser.strength = clamp(parseFloat(event.target.value) || 0, 0, 100);
+      syncControlValues();
+      requestRender();
+    });
+
+    references.eraserSoftness?.addEventListener('input', (event) => {
+      toolsState.eraser.softness = clamp(parseFloat(event.target.value) || 0, 0, 100);
+      syncControlValues();
+      requestRender();
+    });
+
+    references.landmarkScale?.addEventListener('input', (event) => {
+      const min = parseFloat(event.target.min) || 0.5;
+      const max = parseFloat(event.target.max) || 3;
+      toolsState.landmark.scale = clamp(parseFloat(event.target.value) || 1, min, max);
+      syncControlValues();
+      requestRender();
+    });
+
+    references.landmarkModeButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const { value } = button.dataset;
+        if (!value || toolsState.landmark.mode === value) {
+          return;
+        }
+        toolsState.landmark.mode = value;
+        syncLandmarkMode();
+        requestRender();
+      });
+    });
+
+    references.landmarkImageButton?.addEventListener('click', () => {
+      references.landmarkImagePicker?.click();
+    });
+
+    references.landmarkImagePicker?.addEventListener('change', (event) => {
+      const file = event.target.files && event.target.files[0];
+      toolsState.landmark.imageName = file ? file.name : '';
+      syncControlValues();
+      requestRender();
+    });
+
+    syncControlValues();
+
+    const api = {
+      setActiveTool,
+      sync: syncControlValues,
+    };
+
+    ui.toolControls = api;
+    return api;
+  }
+
+  function bindToolButtons(state, toolControls) {
     const toolButtons = Array.from(document.querySelectorAll('[data-tool]'));
     if (!toolButtons.length) {
       return;
@@ -61,6 +412,7 @@
         button.classList.toggle('is-active', isActive);
         button.setAttribute('aria-pressed', String(isActive));
       });
+      toolControls?.setActiveTool?.(state.tool);
     }
 
     syncButtons();
@@ -231,7 +583,8 @@
   function bindControls() {
     const state = (WebMapper.state = WebMapper.state || {});
 
-    bindToolButtons(state);
+    const toolControls = bindToolControls(state);
+    bindToolButtons(state, toolControls);
     bindFeatureToggles(state);
     bindFeaturePanel(state);
     bindCenterViewButton();
