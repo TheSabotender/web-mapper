@@ -35,10 +35,34 @@
   }
 
   const DEFAULT_LAYERS = [
-    { id: 'roads', name: 'Roads', visible: true, locked: false },
-    { id: 'settlements', name: 'Settlements', visible: true, locked: false },
-    { id: 'points', name: 'Points of Interest', visible: true, locked: false },
+    { id: 'roads', name: 'Roads', visible: true, locked: false, sortIndex: 0 },
+    { id: 'settlements', name: 'Settlements', visible: true, locked: false, sortIndex: 1 },
+    { id: 'points', name: 'Points of Interest', visible: true, locked: false, sortIndex: 2 },
   ];
+
+  function normalizeLayers(layers) {
+    if (!Array.isArray(layers)) {
+      return [];
+    }
+
+    const decorated = layers.map((layer, index) => ({
+      layer,
+      sortIndex: typeof layer.sortIndex === 'number' ? layer.sortIndex : index,
+      originalIndex: index,
+    }));
+
+    decorated.sort((a, b) => {
+      if (a.sortIndex !== b.sortIndex) {
+        return a.sortIndex - b.sortIndex;
+      }
+      return a.originalIndex - b.originalIndex;
+    });
+
+    return decorated.map((entry, index) => {
+      entry.layer.sortIndex = index;
+      return entry.layer;
+    });
+  }
 
   function ensureTerrainLayer(features) {
     const stored = features?.terrainLayer;
@@ -65,22 +89,31 @@
 
   function ensureLayerState(state) {
     const features = (state.features = state.features || {});
+    const utils = WebMapper.utils || {};
+    const generateGuid = typeof utils.generateGuid === 'function' ? utils.generateGuid : null;
 
     let layers = Array.isArray(features.layers) ? features.layers.slice() : null;
     if (!layers || layers.length === 0) {
-      layers = DEFAULT_LAYERS.map((layer) => ({
+      layers = DEFAULT_LAYERS.map((layer, index) => ({
         ...layer,
+        sortIndex: typeof layer.sortIndex === 'number' ? layer.sortIndex : index,
         visible: typeof features[layer.id] === 'boolean' ? features[layer.id] : layer.visible,
       }));
     } else {
-      layers = layers.map((layer, index) => ({
-        id: layer.id || `layer-${index + 1}`,
-        name: layer.name || `Layer ${index + 1}`,
-        visible: typeof layer.visible === 'boolean' ? layer.visible : true,
-        locked: Boolean(layer.locked),
-      }));
+      layers = layers.map((layer, index) => {
+        const id = layer?.id || (generateGuid ? generateGuid() : `layer-${index + 1}`);
+        const sortIndex = typeof layer?.sortIndex === 'number' ? layer.sortIndex : index;
+        return {
+          id,
+          name: layer?.name || `Layer ${index + 1}`,
+          visible: typeof layer?.visible === 'boolean' ? layer.visible : true,
+          locked: Boolean(layer?.locked),
+          sortIndex,
+        };
+      });
     }
 
+    layers = normalizeLayers(layers);
     features.layers = layers;
     ensureTerrainLayer(features);
     if (typeof features.counter !== 'number' || features.counter < layers.length) {
@@ -135,6 +168,11 @@
       const features = ensureLayerState(state);
       const uiState = (state.ui = state.ui || {});
       const panelState = (uiState.featurePanel = uiState.featurePanel || {});
+
+      function normalizeLayerOrder() {
+        const normalized = normalizeLayers(features.layers.slice());
+        features.layers.splice(0, features.layers.length, ...normalized);
+      }
 
       function clamp(value, min, max) {
         return Math.min(Math.max(value, min), max);
@@ -421,6 +459,8 @@
           delete features[removed.id];
         }
 
+        normalizeLayerOrder();
+
         if (features.activeLayerId === layerId) {
           features.activeLayerId = features.layers[index]?.id || features.layers[index - 1]?.id || null;
         }
@@ -449,10 +489,20 @@
 
       function addLayer() {
         features.counter = (features.counter || 0) + 1;
-        const id = `layer-${features.counter}`;
+        const utils = WebMapper.utils || {};
+        const generateGuid = typeof utils.generateGuid === 'function' ? utils.generateGuid : null;
+        const fallbackId = `layer-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+        const id = generateGuid ? generateGuid() : fallbackId;
         const name = `New Layer ${features.counter}`;
-        const layer = { id, name, visible: true, locked: false };
+        const layer = {
+          id,
+          name,
+          visible: true,
+          locked: false,
+          sortIndex: features.layers.length,
+        };
         features.layers.push(layer);
+        normalizeLayerOrder();
         features.activeLayerId = layer.id;
         syncFeatureVisibility(features);
         renderLayers();
@@ -499,6 +549,7 @@
 
       function renderLayers() {
         if (!list) return;
+        normalizeLayerOrder();
         list.innerHTML = '';
 
         const fragment = document.createDocumentFragment();
@@ -545,6 +596,8 @@
           const item = document.createElement('div');
           item.className = 'layer-panel__item';
           item.dataset.layerId = layer.id;
+          item.dataset.draggable = 'true';
+          item.dataset.sortIndex = String(typeof layer.sortIndex === 'number' ? layer.sortIndex : 0);
           item.setAttribute('role', 'option');
           item.setAttribute('aria-selected', String(features.activeLayerId === layer.id));
           item.id = `layer-option-${layer.id}`;
@@ -604,6 +657,140 @@
         } else {
           list.removeAttribute('aria-activedescendant');
         }
+      }
+
+      function getDraggableItems() {
+        if (!list) return [];
+        return Array.from(
+          list.querySelectorAll('.layer-panel__item[data-layer-id]:not([data-static-layer="true"])')
+        );
+      }
+
+      function updateLayerOrderFromDom({ save = false, triggerRender = false } = {}) {
+        const items = getDraggableItems();
+        if (!items.length) {
+          return false;
+        }
+
+        let changed = false;
+        items.forEach((item, index) => {
+          const layerId = item.dataset.layerId;
+          const layer = findLayer(features, layerId);
+          if (layer && layer.sortIndex !== index) {
+            layer.sortIndex = index;
+            changed = true;
+          }
+        });
+
+        if (changed) {
+          normalizeLayerOrder();
+          if (triggerRender) {
+            requestRender?.();
+          }
+          if (save) {
+            WebMapper.saveState?.();
+          }
+        }
+
+        return changed;
+      }
+
+      let layerDragState = null;
+
+      function onLayerItemPointerDown(event) {
+        if (event.button !== 0) return;
+        const item = event.target.closest('.layer-panel__item[data-layer-id]');
+        if (!item || item.dataset.staticLayer === 'true') return;
+        const actionTarget = event.target.closest('button[data-action]');
+        if (actionTarget && actionTarget.dataset.action !== 'select-layer') {
+          return;
+        }
+
+        layerDragState = {
+          pointerId: event.pointerId,
+          item,
+          hasMoved: false,
+        };
+
+        item.classList.add('is-grabbed');
+        if (typeof item.setPointerCapture === 'function') {
+          item.setPointerCapture(event.pointerId);
+        }
+      }
+
+      function onLayerItemPointerMove(event) {
+        if (!layerDragState || event.pointerId !== layerDragState.pointerId) return;
+        event.preventDefault();
+
+        const items = getDraggableItems();
+        if (items.length <= 1) {
+          return;
+        }
+
+        const currentIndex = items.indexOf(layerDragState.item);
+        if (currentIndex === -1) {
+          return;
+        }
+
+        const withoutCurrent = items.slice();
+        withoutCurrent.splice(currentIndex, 1);
+
+        let insertIndex = withoutCurrent.length;
+        for (let i = 0; i < withoutCurrent.length; i += 1) {
+          const rect = withoutCurrent[i].getBoundingClientRect();
+          if (event.clientY < rect.top + rect.height / 2) {
+            insertIndex = i;
+            break;
+          }
+        }
+
+        const referenceNode = withoutCurrent[insertIndex] ?? null;
+        const nextSibling = layerDragState.item.nextElementSibling;
+        if (referenceNode === nextSibling) {
+          return;
+        }
+
+        list.insertBefore(layerDragState.item, referenceNode);
+        const changed = updateLayerOrderFromDom({ triggerRender: true });
+        if (changed) {
+          layerDragState.hasMoved = true;
+        }
+      }
+
+      function finalizeLayerDrag(event) {
+        if (!layerDragState || event.pointerId !== layerDragState.pointerId) {
+          return;
+        }
+
+        const { item, pointerId, hasMoved } = layerDragState;
+        if (typeof item.releasePointerCapture === 'function') {
+          try {
+            item.releasePointerCapture(pointerId);
+          } catch (e) {
+            // Ignore release errors
+          }
+        }
+        item.classList.remove('is-grabbed');
+
+        const changed = updateLayerOrderFromDom({ triggerRender: true });
+        const shouldCommit = hasMoved || changed;
+        layerDragState = null;
+
+        if (!shouldCommit) {
+          return;
+        }
+
+        WebMapper.saveState?.();
+        renderLayers();
+        requestRender?.();
+      }
+
+      function onLayerItemPointerUp(event) {
+        finalizeLayerDrag(event);
+      }
+
+      function onLayerItemPointerCancel(event) {
+        finalizeLayerDrag(event);
       }
 
       let isDragging = false;
@@ -701,6 +888,11 @@
       resizeHandle?.addEventListener('pointermove', onResizePointerMove);
       resizeHandle?.addEventListener('pointerup', onResizePointerEnd);
       resizeHandle?.addEventListener('pointercancel', onResizePointerEnd);
+
+      list?.addEventListener('pointerdown', onLayerItemPointerDown);
+      list?.addEventListener('pointermove', onLayerItemPointerMove);
+      list?.addEventListener('pointerup', onLayerItemPointerUp);
+      list?.addEventListener('pointercancel', onLayerItemPointerCancel);
 
       list?.addEventListener('click', (event) => {
         const actionTarget = event.target.closest('button[data-action]');
