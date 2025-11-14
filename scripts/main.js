@@ -20,8 +20,12 @@
     paths: [
       {
         id: 'road001', type: 'road', width: 8, points: [
-              { inX: 0.35, inY: 0.65, x: 0.45, y: 0.95, outX: 0.75, outY: 0.2 },
-              { inX: 0.35, inY: 0.65, x: 1.45, y: 0.95, outX: 0.75, outY: 0.2 }
+          { inX: 0.35, inY: 0.65, x: 0.45, y: 0.95, outX: 0.75, outY: 0.2 },
+          { inX: 1.35, inY: 0.65, x: 1.45, y: 0.95, outX: 1.75, outY: 0.2 }
+        ],
+        id: 'road001', type: 'river', width: 8, points: [
+          { inX: 0.35, inY: 0.65, x: 0.45, y: 0.95, outX: 0.75, outY: 0.2 },
+          { inX: 0.35, inY: 1.65, x: 1.45, y: 1.95, outX: 0.75, outY: 1.2 }
         ]
       }
     ],    

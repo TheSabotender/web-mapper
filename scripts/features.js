@@ -28,7 +28,19 @@
       }
 
     ctx.beginPath();
-    ctx.moveTo(width * 0.1, height * 0.85);
+
+    let lingerX = 0;
+    let lingerY = 0;
+    path.points.forEach((point, index) => {
+        if (index === 0) {
+          ctx.moveTo(width * point.x, height * point.y);
+        } else {
+          ctx.bezierCurveTo(lingerX, lingerY, width * point.inX, height * point.inY, point.x, point.y);
+        }
+        lingerX = width * point.outX;
+        lingerY = height * point.outY;
+        
+    });
     ctx.bezierCurveTo(
       width * 0.35,
       height * 0.65,
