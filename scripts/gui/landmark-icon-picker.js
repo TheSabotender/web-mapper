@@ -34,6 +34,7 @@
       if (isActive) {
         panel.removeAttribute('hidden');
         panel.setAttribute('tabindex', '0');
+        panel.scrollTop = 0;
       } else {
         panel.setAttribute('hidden', '');
         panel.setAttribute('tabindex', '-1');
@@ -105,19 +106,31 @@
     }
 
     const { iconPath, trigger } = options;
-    if (typeof iconPath === 'string' && iconPath.trim()) {
-      activeIconPath = iconPath;
+    if (typeof iconPath === 'string') {
+      const trimmedPath = iconPath.trim();
+      if (trimmedPath) {
+        activeIconPath = trimmedPath;
+      }
     }
     lastTrigger = trigger || null;
     setOverlayVisible(true);
   }
 
   function setSelectedIcon(iconPath) {
-    if (typeof iconPath === 'string' && iconPath.trim()) {
-      activeIconPath = iconPath;
-      if (isOverlayVisible()) {
-        highlightIcon(activeIconPath);
-      }
+    if (typeof iconPath !== 'string') {
+      return;
+    }
+
+    const trimmedPath = iconPath.trim();
+    if (!trimmedPath) {
+      return;
+    }
+
+    const hasChanged = trimmedPath !== activeIconPath;
+    activeIconPath = trimmedPath;
+
+    if (hasChanged && isOverlayVisible()) {
+      highlightIcon(activeIconPath);
     }
   }
 
