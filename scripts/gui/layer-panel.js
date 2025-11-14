@@ -17,6 +17,22 @@
   const TERRAIN_LAYER = { id: TERRAIN_LAYER_ID, name: 'Terrain', visible: true, locked: false };
   const MIN_HEIGHT = 220;
   const PANEL_MARGIN = 16;
+  const PANEL_ANCHORS = [
+    { name: 'top-left', horizontal: 'left', vertical: 'top' },
+    { name: 'top-center', horizontal: 'center', vertical: 'top' },
+    { name: 'top-right', horizontal: 'right', vertical: 'top' },
+    { name: 'center-left', horizontal: 'left', vertical: 'center' },
+    { name: 'center', horizontal: 'center', vertical: 'center' },
+    { name: 'center-right', horizontal: 'right', vertical: 'center' },
+    { name: 'bottom-left', horizontal: 'left', vertical: 'bottom' },
+    { name: 'bottom-center', horizontal: 'center', vertical: 'bottom' },
+    { name: 'bottom-right', horizontal: 'right', vertical: 'bottom' },
+  ];
+  const DEFAULT_ANCHOR = 'top-right';
+
+  function resolveAnchor(name) {
+    return PANEL_ANCHORS.find((anchor) => anchor.name === name) || PANEL_ANCHORS.find((anchor) => anchor.name === DEFAULT_ANCHOR);
+  }
 
   const DEFAULT_LAYERS = [
     { id: 'roads', name: 'Roads', visible: true, locked: false },
@@ -124,22 +140,161 @@
         return Math.min(Math.max(value, min), max);
       }
 
-      function clampPosition(position) {
+      function ensurePositionState() {
+        if (
+          !panelState.position ||
+          typeof panelState.position.x !== 'number' ||
+          typeof panelState.position.y !== 'number'
+        ) {
+          panelState.position = { x: 0, y: 0 };
+        }
+      }
+
+      function getAnchorPoint(anchor) {
+        const horizontal =
+          anchor.horizontal === 'left'
+            ? PANEL_MARGIN
+            : anchor.horizontal === 'center'
+            ? window.innerWidth / 2
+            : window.innerWidth - PANEL_MARGIN;
+        const vertical =
+          anchor.vertical === 'top'
+            ? PANEL_MARGIN
+            : anchor.vertical === 'center'
+            ? window.innerHeight / 2
+            : window.innerHeight - PANEL_MARGIN;
+        return { x: horizontal, y: vertical };
+      }
+
+      function findClosestAnchor(rect) {
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        let best = resolveAnchor(panelState.anchor);
+        let bestDistance = Infinity;
+        PANEL_ANCHORS.forEach((candidate) => {
+          const point = getAnchorPoint(candidate);
+          const dx = centerX - point.x;
+          const dy = centerY - point.y;
+          const distance = dx * dx + dy * dy;
+          if (distance < bestDistance) {
+            best = candidate;
+            bestDistance = distance;
+          }
+        });
+        return best;
+      }
+
+      function computeAnchorOffsets(rect, anchor) {
+        const offsets = { x: 0, y: 0 };
+        if (anchor.horizontal === 'left') {
+          offsets.x = rect.left - PANEL_MARGIN;
+        } else if (anchor.horizontal === 'center') {
+          const centerX = window.innerWidth / 2;
+          offsets.x = rect.left + rect.width / 2 - centerX;
+        } else {
+          offsets.x = window.innerWidth - rect.right - PANEL_MARGIN;
+        }
+
+        if (anchor.vertical === 'top') {
+          offsets.y = rect.top - PANEL_MARGIN;
+        } else if (anchor.vertical === 'center') {
+          const centerY = window.innerHeight / 2;
+          offsets.y = rect.top + rect.height / 2 - centerY;
+        } else {
+          offsets.y = window.innerHeight - rect.bottom - PANEL_MARGIN;
+        }
+
+        return offsets;
+      }
+
+      function getTransformOrigin(anchor) {
+        const horizontal = anchor.horizontal === 'center' ? 'center' : anchor.horizontal;
+        const vertical = anchor.vertical === 'center' ? 'center' : anchor.vertical;
+        return `${horizontal} ${vertical}`;
+      }
+
+      function applyAnchoredPosition(anchorName, position, rect) {
+        ensurePositionState();
+        const anchor = resolveAnchor(anchorName);
+        const measurements = rect || panel.getBoundingClientRect();
+        const width = measurements.width;
+        const height = measurements.height;
+
+        let offsetX = typeof position?.x === 'number' ? position.x : panelState.position.x;
+        let offsetY = typeof position?.y === 'number' ? position.y : panelState.position.y;
+
+        let leftValue = null;
+        let rightValue = null;
+        let topValue = null;
+        let bottomValue = null;
+
+        if (anchor.horizontal === 'left') {
+          const maxLeft = Math.max(PANEL_MARGIN, window.innerWidth - width - PANEL_MARGIN);
+          const desiredLeft = PANEL_MARGIN + offsetX;
+          const clampedLeft = clamp(desiredLeft, PANEL_MARGIN, maxLeft);
+          leftValue = clampedLeft;
+          offsetX = Math.max(0, clampedLeft - PANEL_MARGIN);
+        } else if (anchor.horizontal === 'center') {
+          const centerX = window.innerWidth / 2;
+          const minLeft = PANEL_MARGIN;
+          const maxLeft = Math.max(PANEL_MARGIN, window.innerWidth - width - PANEL_MARGIN);
+          const desiredLeft = centerX - width / 2 + offsetX;
+          const clampedLeft = clamp(desiredLeft, minLeft, maxLeft);
+          leftValue = clampedLeft;
+          offsetX = clampedLeft - (centerX - width / 2);
+        } else {
+          const maxRight = Math.max(PANEL_MARGIN, window.innerWidth - width - PANEL_MARGIN);
+          const desiredRight = PANEL_MARGIN + offsetX;
+          const clampedRight = clamp(desiredRight, PANEL_MARGIN, maxRight);
+          rightValue = clampedRight;
+          offsetX = Math.max(0, clampedRight - PANEL_MARGIN);
+        }
+
+        if (anchor.vertical === 'top') {
+          const maxTop = Math.max(PANEL_MARGIN, window.innerHeight - height - PANEL_MARGIN);
+          const desiredTop = PANEL_MARGIN + offsetY;
+          const clampedTop = clamp(desiredTop, PANEL_MARGIN, maxTop);
+          topValue = clampedTop;
+          offsetY = Math.max(0, clampedTop - PANEL_MARGIN);
+        } else if (anchor.vertical === 'center') {
+          const centerY = window.innerHeight / 2;
+          const minTop = PANEL_MARGIN;
+          const maxTop = Math.max(PANEL_MARGIN, window.innerHeight - height - PANEL_MARGIN);
+          const desiredTop = centerY - height / 2 + offsetY;
+          const clampedTop = clamp(desiredTop, minTop, maxTop);
+          topValue = clampedTop;
+          offsetY = clampedTop - (centerY - height / 2);
+        } else {
+          const maxBottom = Math.max(PANEL_MARGIN, window.innerHeight - height - PANEL_MARGIN);
+          const desiredBottom = PANEL_MARGIN + offsetY;
+          const clampedBottom = clamp(desiredBottom, PANEL_MARGIN, maxBottom);
+          bottomValue = clampedBottom;
+          offsetY = Math.max(0, clampedBottom - PANEL_MARGIN);
+        }
+
+        panel.style.left = leftValue === null ? 'auto' : `${leftValue}px`;
+        panel.style.right = rightValue === null ? 'auto' : `${rightValue}px`;
+        panel.style.top = topValue === null ? 'auto' : `${topValue}px`;
+        panel.style.bottom = bottomValue === null ? 'auto' : `${bottomValue}px`;
+        panel.style.transformOrigin = getTransformOrigin(anchor);
+
+        panelState.anchor = anchor.name;
+        panelState.position = { x: offsetX, y: offsetY };
+      }
+
+      function setAbsolutePosition(position) {
         const rect = panel.getBoundingClientRect();
         const maxX = Math.max(PANEL_MARGIN, window.innerWidth - rect.width - PANEL_MARGIN);
         const maxY = Math.max(PANEL_MARGIN, window.innerHeight - rect.height - PANEL_MARGIN);
-        return {
-          x: clamp(position.x, PANEL_MARGIN, maxX),
-          y: clamp(position.y, PANEL_MARGIN, maxY),
-        };
-      }
+        const clampedX = clamp(position.x, PANEL_MARGIN, maxX);
+        const clampedY = clamp(position.y, PANEL_MARGIN, maxY);
 
-      function applyPosition(position) {
-        const clamped = clampPosition(position);
+        panel.style.left = `${clampedX}px`;
+        panel.style.top = `${clampedY}px`;
         panel.style.right = 'auto';
-        panel.style.left = `${clamped.x}px`;
-        panel.style.top = `${clamped.y}px`;
-        panelState.position = clamped;
+        panel.style.bottom = 'auto';
+
+        return { x: clampedX, y: clampedY };
       }
 
       function applyHeight(height) {
@@ -163,13 +318,31 @@
 
       function ensurePosition() {
         ensureHeight();
+        ensurePositionState();
+
         const rect = panel.getBoundingClientRect();
-        const defaultPosition = {
-          x: window.innerWidth - rect.width - PANEL_MARGIN,
-          y: PANEL_MARGIN,
-        };
-        const position = panelState.position || defaultPosition;
-        applyPosition(position);
+        const hasAnchor = typeof panelState.anchor === 'string';
+
+        if (!hasAnchor) {
+          const hasLegacyPosition =
+            panelState.position &&
+            typeof panelState.position.x === 'number' &&
+            typeof panelState.position.y === 'number' &&
+            (panelState.position.x !== 0 || panelState.position.y !== 0);
+
+          const fallbackPosition = hasLegacyPosition
+            ? panelState.position
+            : { x: rect.left, y: rect.top };
+
+          setAbsolutePosition(fallbackPosition);
+          const updatedRect = panel.getBoundingClientRect();
+          const anchor = findClosestAnchor(updatedRect);
+          const offsets = computeAnchorOffsets(updatedRect, anchor);
+          applyAnchoredPosition(anchor.name, offsets, updatedRect);
+          return;
+        }
+
+        applyAnchoredPosition(panelState.anchor, panelState.position, rect);
       }
 
       function syncMinimized() {
@@ -447,24 +620,21 @@
         if (event.button !== 0) return;
         if (event.target.closest('[data-action]')) return;
 
-        const position = panelState.position || {
-          x:
-            parseFloat(panel.style.left) ||
-            window.innerWidth - panel.getBoundingClientRect().width - PANEL_MARGIN,
-          y: parseFloat(panel.style.top) || PANEL_MARGIN,
-        };
+        const rect = panel.getBoundingClientRect();
+        offsetX = event.clientX - rect.left;
+        offsetY = event.clientY - rect.top;
+
+        setAbsolutePosition({ x: rect.left, y: rect.top });
 
         isDragging = true;
         pointerId = event.pointerId;
-        offsetX = event.clientX - position.x;
-        offsetY = event.clientY - position.y;
         panel.classList.add('is-dragging');
         header?.setPointerCapture(pointerId);
       }
 
       function onDrag(event) {
-        if (!isDragging) return;
-        applyPosition({ x: event.clientX - offsetX, y: event.clientY - offsetY });
+        if (!isDragging || event.pointerId !== pointerId) return;
+        setAbsolutePosition({ x: event.clientX - offsetX, y: event.clientY - offsetY });
       }
 
       function endDrag() {
@@ -475,6 +645,12 @@
           header?.releasePointerCapture(pointerId);
         }
         pointerId = null;
+
+        const rect = panel.getBoundingClientRect();
+        const anchor = findClosestAnchor(rect);
+        const offsets = computeAnchorOffsets(rect, anchor);
+        applyAnchoredPosition(anchor.name, offsets, rect);
+        WebMapper.saveState?.();
       }
 
       let isResizing = false;
@@ -499,7 +675,7 @@
         if (!isResizing || event.pointerId !== resizePointerId) return;
         const delta = event.clientY - startY;
         applyHeight(startHeight + delta);
-        applyPosition(panelState.position || { x: panel.offsetLeft, y: panel.offsetTop });
+        applyAnchoredPosition(panelState.anchor || DEFAULT_ANCHOR, panelState.position);
       }
 
       function onResizePointerEnd(event) {
