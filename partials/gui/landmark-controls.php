@@ -44,26 +44,24 @@
       <output id="landmark-scale-value" class="tool-controls__value" data-output-for="landmark-scale">100%</output>
     </div>
   </div>
-  <div class="tool-controls__field tool-controls__field--file">
-    <div class="tool-controls__control tool-controls__control--file">
-      <div class="tool-controls__file">
-        <button
-          type="button"
-          class="tool-controls__file-button"
-          data-control="landmark-image"
-          aria-labelledby="landmark-image-label landmark-image-value"
-        >
-          Choose image
-        </button>
-      </div>
+  <div class="tool-controls__field tool-controls__field--color">
+    <div class="tool-controls__control tool-controls__control--color">
+      <button
+        type="button"
+        class="tool-controls__image-button"
+        data-control="landmark-image"
+        data-default-icon="assets/icons/location/castle.svg"
+        aria-label="Choose landmark icon"
+      >
+        <span class="tool-controls__image-preview" aria-hidden="true">
+          <img
+            src="assets/icons/location/castle.svg"
+            alt=""
+            data-landmark-image-preview
+          >
+        </span>
+        <span class="visually-hidden">Choose landmark icon</span>
+      </button>
     </div>
-    <input
-      id="landmark-image-input"
-      class="visually-hidden"
-      type="file"
-      accept="image/*"
-      data-picker-for="landmark-image"
-      aria-label="Select landmark image"
-    >
   </div>
 </div>

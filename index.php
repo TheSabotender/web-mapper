@@ -17,6 +17,7 @@
     <?php include __DIR__ . '/partials/gui.php'; ?>
   </div>
 
+  <?php include __DIR__ . '/partials/landmark-icon-picker.php'; ?>
   <?php include __DIR__ . '/partials/settings.php'; ?>
 
   <script src="scripts/utils.js"></script>
