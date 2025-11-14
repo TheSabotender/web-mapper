@@ -37,21 +37,6 @@
     ctx.restore();
   }
 
-  function getLayerById(state, layerId) {
-    return state?.features?.layers?.find((entry) => entry?.id === layerId) || null;
-  }
-
-  function resolveCoordinate(value, dimension) {
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) {
-      return dimension * 0.5;
-    }
-    if (numeric >= 0 && numeric <= 1) {
-      return numeric * dimension;
-    }
-    return numeric;
-  }
-
   function drawFeatureTooltip(ctx, text, x, y, size) {
     if (!text) return;
 
@@ -130,17 +115,15 @@
 
   function drawLayerFeatures(
     ctx,
-    state,
+    layer,
     width,
     height,
-    layerId,
     renderedFeatures,
     hoveredFeature,
     options = {}
   ) {
     if (!isLayerVisible(state, layerId)) return;
 
-    const layer = getLayerById(state, layerId);
     const features = Array.isArray(layer?.features) ? layer.features : [];
     if (features.length === 0) {
       return;
@@ -157,24 +140,27 @@
 
     features.forEach((feature) => {
       const position = feature?.position || {};
-      const x = resolveCoordinate(position.x, width);
-      const y = resolveCoordinate(position.y, height);
+      const x = width * position.x;
+      const y = height * position.y;
       const baseSize = Number(feature?.size) || 24;
       const size = Math.max(baseSize, 12);
       const icon = feature?.icon || '';
       const didDrawIcon = drawIcon(ctx, icon, x, y, size);
 
-      if (!didDrawIcon) {
-        ctx.save();
-        ctx.fillStyle = fallbackFillStyle;
-        ctx.strokeStyle = fallbackStrokeStyle;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
-      }
+        if (!didDrawIcon) {
+            ctx.save();
+            ctx.fillStyle = fallbackFillStyle;
+            ctx.strokeStyle = fallbackStrokeStyle;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+            console.log('Drew fallback for feature:', feature);
+        } else {
+            console.log('Successfully drew icon:', feature);
+        }
 
       if (feature?.guid) {
         renderedFeatures?.push({
@@ -192,27 +178,6 @@
     });
 
     ctx.restore();
-  }
-
-  function drawSettlements(ctx, state, width, height, renderedFeatures, hoveredFeature) {
-    drawLayerFeatures(ctx, state, width, height, 'settlements', renderedFeatures, hoveredFeature, {
-      fallbackFillStyle: 'rgba(255, 255, 255, 0.9)',
-      fallbackStrokeStyle: 'rgba(0, 0, 0, 0.25)',
-    });
-  }
-
-  function drawPointsOfInterest(
-    ctx,
-    state,
-    width,
-    height,
-    renderedFeatures,
-    hoveredFeature
-  ) {
-    drawLayerFeatures(ctx, state, width, height, 'points', renderedFeatures, hoveredFeature, {
-      fallbackFillStyle: 'rgba(79, 139, 255, 0.9)',
-      fallbackStrokeStyle: 'rgba(12, 32, 84, 0.6)',
-    });
   }
 
   function RenderFeatures(ctx, state) {
@@ -234,8 +199,16 @@
     const hoveredFeature = runtime.hoveredFeature || null;
 
     drawRoads(ctx, state, width, height);
-    drawSettlements(ctx, state, width, height, renderedFeatures, hoveredFeature);
-    drawPointsOfInterest(ctx, state, width, height, renderedFeatures, hoveredFeature);
+
+    const layers = state?.map?.layers || [];
+    if (layers.length !== 0) {
+        layers.forEach((layer) => {
+            drawLayerFeatures(ctx, layer, width, height, renderedFeatures, hoveredFeature, {
+                fallbackFillStyle: 'rgba(255, 255, 255, 0.9)',
+                fallbackStrokeStyle: 'rgba(0, 0, 0, 0.25)',
+            });
+        });
+    }
 
     runtime.renderedFeatures = renderedFeatures;
     if (

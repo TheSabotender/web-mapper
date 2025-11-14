@@ -22,7 +22,7 @@
           features: [
             {
               guid: 'settlement-emerald-haven',
-              icon: 'assets/icons/location/castle.svg',
+              icon: 'assets/icons/location/Bastle.svg',
               position: { x: 0.25, y: 0.6 },
               size: 32,
               name: 'Emerald Haven',
@@ -31,7 +31,7 @@
             },
             {
               guid: 'settlement-crimson-hold',
-              icon: 'assets/icons/location/castle.svg',
+              icon: 'assets/icons/location/Bastion.svg',
               position: { x: 0.55, y: 0.45 },
               size: 36,
               name: 'Crimson Hold',
@@ -40,7 +40,7 @@
             },
             {
               guid: 'settlement-moonlit-harbor',
-              icon: 'assets/icons/location/castle.svg',
+              icon: 'assets/icons/location/Village.svg',
               position: { x: 0.7, y: 0.75 },
               size: 30,
               name: 'Moonlit Harbor',
@@ -58,7 +58,7 @@
           features: [
             {
               guid: 'poi-watchtower',
-              icon: 'assets/icons/location/castle.svg',
+              icon: 'assets/icons/location/Tower.svg',
               position: { x: 0.4, y: 0.2 },
               size: 28,
               name: 'Azure Watchtower',
@@ -67,7 +67,7 @@
             },
             {
               guid: 'poi-shrine',
-              icon: 'assets/icons/location/castle.svg',
+              icon: 'assets/icons/location/Hut.svg',
               position: { x: 0.85, y: 0.55 },
               size: 28,
               name: 'Lotus Shrine',
