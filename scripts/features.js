@@ -205,9 +205,9 @@
 
     const paths = state?.paths || [];
       if (paths.length !== 0 && state.pathsVisible) {
-        paths.forEach((path) => {
-            drawPaths(ctx, path, width, height);
-        }
+          paths.forEach((path) => {
+              drawPaths(ctx, path, width, height);
+          });
     }
 
     const layers = state?.layers || [];
