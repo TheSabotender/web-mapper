@@ -64,15 +64,52 @@
     });
   }
 
-  function ensureTerrainLayer(features) {
-    const stored = features?.terrainLayer;
+  function syncLegacyFeatureState(state) {
+    const legacy = state?.features;
+    if (!legacy || typeof legacy !== 'object') {
+      return;
+    }
+
+    legacy.layers = Array.isArray(state.layers) ? state.layers.map((layer) => ({ ...layer })) : [];
+    legacy.counter = state.layerCounter;
+    legacy.activeLayerId = state.activeLayerId;
+
+    if (state.terrainLayer) {
+      legacy.terrainLayer = { ...state.terrainLayer };
+      legacy.terrain = state.terrainVisible;
+      legacy.terrainLocked = state.terrainLocked;
+      legacy[TERRAIN_LAYER_ID] = state.terrainVisible;
+    }
+
+    if (Array.isArray(legacy.layers)) {
+      legacy.layers.forEach((layer) => {
+        if (layer?.id) {
+          legacy[layer.id] = Boolean(layer.visible);
+        }
+      });
+    }
+  }
+
+  function ensureTerrainLayer(state) {
+    const legacyFeatures = state?.features;
     const visibleValue =
-      typeof stored?.visible === 'boolean'
-        ? stored.visible
-        : typeof features?.[TERRAIN_LAYER_ID] === 'boolean'
-        ? features[TERRAIN_LAYER_ID]
-        : TERRAIN_LAYER.visible;
-    const lockedValue = typeof stored?.locked === 'boolean' ? stored.locked : Boolean(features?.terrainLocked);
+      typeof state?.terrainVisible === 'boolean'
+        ? state.terrainVisible
+        : typeof state?.terrain === 'boolean'
+        ? state.terrain
+        : typeof legacyFeatures?.terrainLayer?.visible === 'boolean'
+        ? legacyFeatures.terrainLayer.visible
+        : typeof legacyFeatures?.terrain === 'boolean'
+        ? legacyFeatures.terrain
+        : state?.terrainLayer?.visible ?? TERRAIN_LAYER.visible;
+    const lockedValue =
+      typeof state?.terrainLocked === 'boolean'
+        ? state.terrainLocked
+        : typeof legacyFeatures?.terrainLayer?.locked === 'boolean'
+        ? legacyFeatures.terrainLayer.locked
+        : typeof legacyFeatures?.terrainLocked === 'boolean'
+        ? legacyFeatures.terrainLocked
+        : state?.terrainLayer?.locked ?? TERRAIN_LAYER.locked;
 
     const terrainLayer = {
       ...TERRAIN_LAYER,
@@ -80,24 +117,36 @@
       locked: Boolean(lockedValue),
     };
 
-    features.terrainLayer = terrainLayer;
-    features[TERRAIN_LAYER_ID] = terrainLayer.visible;
-    features.terrain = terrainLayer.visible;
-    features.terrainLocked = terrainLayer.locked;
+    state.terrainLayer = terrainLayer;
+    state.terrainVisible = terrainLayer.visible;
+    state.terrainLocked = terrainLayer.locked;
     return terrainLayer;
   }
 
   function ensureLayerState(state) {
-    const features = (state.features = state.features || {});
+    if (!state || typeof state !== 'object') {
+      return { layers: [] };
+    }
+
     const utils = WebMapper.utils || {};
     const generateGuid = typeof utils.generateGuid === 'function' ? utils.generateGuid : null;
 
-    let layers = Array.isArray(features.layers) ? features.layers.slice() : null;
+    const legacyFeatures = state.features;
+    let layers = Array.isArray(state.layers)
+      ? state.layers.slice()
+      : Array.isArray(legacyFeatures?.layers)
+      ? legacyFeatures.layers.slice()
+      : null;
     if (!layers || layers.length === 0) {
       layers = DEFAULT_LAYERS.map((layer, index) => ({
         ...layer,
         sortIndex: typeof layer.sortIndex === 'number' ? layer.sortIndex : index,
-        visible: typeof features[layer.id] === 'boolean' ? features[layer.id] : layer.visible,
+        visible:
+          typeof state?.[layer.id] === 'boolean'
+            ? state[layer.id]
+            : typeof legacyFeatures?.[layer.id] === 'boolean'
+            ? legacyFeatures[layer.id]
+            : layer.visible,
       }));
     } else {
       layers = layers.map((layer, index) => {
@@ -114,41 +163,33 @@
     }
 
     layers = normalizeLayers(layers);
-    features.layers = layers;
-    ensureTerrainLayer(features);
-    if (typeof features.counter !== 'number' || features.counter < layers.length) {
-      features.counter = layers.length;
+    state.layers = layers;
+    ensureTerrainLayer(state);
+    const legacyCounter = typeof legacyFeatures?.counter === 'number' ? legacyFeatures.counter : null;
+    if (typeof state.layerCounter !== 'number' || state.layerCounter < layers.length) {
+      state.layerCounter = Math.max(layers.length, legacyCounter || 0) || layers.length;
     }
 
-    if (!features.activeLayerId || !layers.some((layer) => layer.id === features.activeLayerId)) {
-      features.activeLayerId = layers[0]?.id || null;
+    if (!state.activeLayerId && legacyFeatures?.activeLayerId) {
+      state.activeLayerId = legacyFeatures.activeLayerId;
     }
 
-    syncFeatureVisibility(features);
-    return features;
-  }
-
-  function syncFeatureVisibility(features) {
-    if (!features || !Array.isArray(features.layers)) return;
-    features.layers.forEach((layer) => {
-      features[layer.id] = Boolean(layer.visible);
-    });
-    const terrainLayer = ensureTerrainLayer(features);
-    if (terrainLayer) {
-      features[TERRAIN_LAYER_ID] = Boolean(terrainLayer.visible);
-      features.terrain = Boolean(terrainLayer.visible);
-      features.terrainLocked = Boolean(terrainLayer.locked);
+    if (!state.activeLayerId || !layers.some((layer) => layer.id === state.activeLayerId)) {
+      state.activeLayerId = layers[0]?.id || null;
     }
+
+    syncLegacyFeatureState(state);
+    return state;
   }
 
-  function findLayer(features, layerId) {
-    if (!features || !Array.isArray(features.layers)) return null;
-    return features.layers.find((layer) => layer.id === layerId) || null;
+  function findLayer(state, layerId) {
+    if (!state || !Array.isArray(state.layers)) return null;
+    return state.layers.find((layer) => layer.id === layerId) || null;
   }
 
-  function getTerrainLayer(features) {
-    if (!features) return null;
-    return ensureTerrainLayer(features);
+  function getTerrainLayer(state) {
+    if (!state) return null;
+    return ensureTerrainLayer(state);
   }
 
   ui.LayerPanel = {
@@ -165,13 +206,13 @@
       const addButton = panel.querySelector('[data-action="add-layer"]');
       const resizeHandle = panel.querySelector('[data-action="resize-panel"]');
 
-      const features = ensureLayerState(state);
+      const layerState = ensureLayerState(state);
       const uiState = (state.ui = state.ui || {});
       const panelState = (uiState.featurePanel = uiState.featurePanel || {});
 
       function normalizeLayerOrder() {
-        const normalized = normalizeLayers(features.layers.slice());
-        features.layers.splice(0, features.layers.length, ...normalized);
+        const normalized = normalizeLayers(layerState.layers.slice());
+        layerState.layers.splice(0, layerState.layers.length, ...normalized);
       }
 
       function clamp(value, min, max) {
@@ -404,28 +445,30 @@
       function setActiveLayer(layerId) {
         if (!layerId) return;
         if (layerId === TERRAIN_LAYER_ID) return;
-        if (features.activeLayerId === layerId) return;
-        const layer = findLayer(features, layerId);
+        if (layerState.activeLayerId === layerId) return;
+        const layer = findLayer(layerState, layerId);
         if (!layer) return;
-        features.activeLayerId = layerId;
+        layerState.activeLayerId = layerId;
+        syncLegacyFeatureState(layerState);
         renderLayers();
       }
 
       function toggleLayerVisibility(layerId) {
         if (layerId === TERRAIN_LAYER_ID) {
-          const terrainLayer = getTerrainLayer(features);
+          const terrainLayer = getTerrainLayer(layerState);
           if (!terrainLayer) return;
           terrainLayer.visible = !terrainLayer.visible;
-          syncFeatureVisibility(features);
+          layerState.terrainVisible = terrainLayer.visible;
+          syncLegacyFeatureState(layerState);
           renderLayers();
           requestRender?.();
           WebMapper.saveState?.();
           return;
         }
-        const layer = findLayer(features, layerId);
+        const layer = findLayer(layerState, layerId);
         if (!layer) return;
         layer.visible = !layer.visible;
-        syncFeatureVisibility(features);
+        syncLegacyFeatureState(layerState);
         renderLayers();
         requestRender?.();
         WebMapper.saveState?.();
@@ -433,38 +476,39 @@
 
       function toggleLayerLock(layerId) {
         if (layerId === TERRAIN_LAYER_ID) {
-          const terrainLayer = getTerrainLayer(features);
+          const terrainLayer = getTerrainLayer(layerState);
           if (!terrainLayer) return;
           terrainLayer.locked = !terrainLayer.locked;
-          features.terrainLocked = terrainLayer.locked;
+          layerState.terrainLocked = terrainLayer.locked;
+          syncLegacyFeatureState(layerState);
           renderLayers();
           WebMapper.saveState?.();
           return;
         }
-        const layer = findLayer(features, layerId);
+        const layer = findLayer(layerState, layerId);
         if (!layer) return;
         layer.locked = !layer.locked;
+        syncLegacyFeatureState(layerState);
         renderLayers();
         WebMapper.saveState?.();
       }
 
       function removeLayer(layerId) {
         if (layerId === TERRAIN_LAYER_ID) return;
-        const index = features.layers.findIndex((layer) => layer.id === layerId);
+        const index = layerState.layers.findIndex((layer) => layer.id === layerId);
         if (index === -1) return;
-        if (features.layers[index].locked) return;
+        if (layerState.layers[index].locked) return;
 
-        const [removed] = features.layers.splice(index, 1);
-        if (removed) {
-          delete features[removed.id];
-        }
+        layerState.layers.splice(index, 1);
 
         normalizeLayerOrder();
 
-        if (features.activeLayerId === layerId) {
-          features.activeLayerId = features.layers[index]?.id || features.layers[index - 1]?.id || null;
+        if (layerState.activeLayerId === layerId) {
+          layerState.activeLayerId =
+            layerState.layers[index]?.id || layerState.layers[index - 1]?.id || null;
         }
 
+        syncLegacyFeatureState(layerState);
         renderLayers();
         requestRender?.();
         WebMapper.saveState?.();
@@ -472,7 +516,7 @@
 
       function renameLayer(layerId) {
         if (layerId === TERRAIN_LAYER_ID) return;
-        const layer = findLayer(features, layerId);
+        const layer = findLayer(layerState, layerId);
         if (!layer || layer.locked) return;
 
         const currentName = layer.name || '';
@@ -481,6 +525,7 @@
           const trimmed = newName.trim();
           if (trimmed && trimmed !== currentName) {
             layer.name = trimmed;
+            syncLegacyFeatureState(layerState);
             renderLayers();
             WebMapper.saveState?.();
           }
@@ -488,23 +533,23 @@
       }
 
       function addLayer() {
-        features.counter = (features.counter || 0) + 1;
+        layerState.layerCounter = (layerState.layerCounter || 0) + 1;
         const utils = WebMapper.utils || {};
         const generateGuid = typeof utils.generateGuid === 'function' ? utils.generateGuid : null;
         const fallbackId = `layer-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
         const id = generateGuid ? generateGuid() : fallbackId;
-        const name = `New Layer ${features.counter}`;
+        const name = `New Layer ${layerState.layerCounter}`;
         const layer = {
           id,
           name,
           visible: true,
           locked: false,
-          sortIndex: features.layers.length,
+          sortIndex: layerState.layers.length,
         };
-        features.layers.push(layer);
+        layerState.layers.push(layer);
         normalizeLayerOrder();
-        features.activeLayerId = layer.id;
-        syncFeatureVisibility(features);
+        layerState.activeLayerId = layer.id;
+        syncLegacyFeatureState(layerState);
         renderLayers();
         requestRender?.();
         WebMapper.saveState?.();
@@ -553,7 +598,7 @@
         list.innerHTML = '';
 
         const fragment = document.createDocumentFragment();
-        const terrainLayer = getTerrainLayer(features);
+        const terrainLayer = getTerrainLayer(layerState);
         if (terrainLayer) {
           const terrainItem = document.createElement('div');
           terrainItem.className = 'layer-panel__item layer-panel__item--terrain';
@@ -592,18 +637,18 @@
           fragment.appendChild(terrainItem);
         }
 
-        features.layers.forEach((layer) => {
+        layerState.layers.forEach((layer) => {
           const item = document.createElement('div');
           item.className = 'layer-panel__item';
           item.dataset.layerId = layer.id;
           item.dataset.draggable = 'true';
           item.dataset.sortIndex = String(typeof layer.sortIndex === 'number' ? layer.sortIndex : 0);
           item.setAttribute('role', 'option');
-          item.setAttribute('aria-selected', String(features.activeLayerId === layer.id));
+          item.setAttribute('aria-selected', String(layerState.activeLayerId === layer.id));
           item.id = `layer-option-${layer.id}`;
           item.tabIndex = 0;
 
-          if (features.activeLayerId === layer.id) {
+          if (layerState.activeLayerId === layer.id) {
             item.classList.add('is-active');
           }
 
@@ -652,8 +697,8 @@
 
         list.appendChild(fragment);
 
-        if (features.activeLayerId) {
-          list.setAttribute('aria-activedescendant', `layer-option-${features.activeLayerId}`);
+        if (layerState.activeLayerId) {
+          list.setAttribute('aria-activedescendant', `layer-option-${layerState.activeLayerId}`);
         } else {
           list.removeAttribute('aria-activedescendant');
         }
@@ -675,7 +720,7 @@
         let changed = false;
         items.forEach((item, index) => {
           const layerId = item.dataset.layerId;
-          const layer = findLayer(features, layerId);
+          const layer = findLayer(layerState, layerId);
           if (layer && layer.sortIndex !== index) {
             layer.sortIndex = index;
             changed = true;
@@ -684,6 +729,7 @@
 
         if (changed) {
           normalizeLayerOrder();
+          syncLegacyFeatureState(layerState);
           if (triggerRender) {
             requestRender?.();
           }
