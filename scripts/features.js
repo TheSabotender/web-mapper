@@ -54,21 +54,29 @@
     ctx.restore();
   }
 
-  function drawFeatureTooltip(ctx, text, x, y, size) {
+  function drawFeatureTooltip(ctx, text, worldX, worldY, size, view) {
     if (!text) return;
 
     const fontSize = 14;
     const paddingX = 10;
     const paddingY = 6;
-    const verticalOffset = Math.max(size || 24, 20) * 0.75 + 10;
+    const zoom = Number(view?.zoom) || 1;
+    const viewX = Number(view?.x) || 0;
+    const viewY = Number(view?.y) || 0;
+    const iconSize = Math.max(Number(size) || 24, 12);
+    const iconScreenSize = iconSize * zoom;
+    const screenX = (worldX - viewX) * zoom;
+    const screenY = (worldY - viewY) * zoom;
+    const verticalOffset = iconScreenSize * 0.5 + 12;
 
     ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.font = `${fontSize}px "Segoe UI", sans-serif`;
     const textWidth = ctx.measureText(text).width;
     const boxWidth = textWidth + paddingX * 2;
     const boxHeight = fontSize + paddingY * 2;
-    const boxX = x - boxWidth / 2;
-    const boxY = y - verticalOffset - boxHeight / 2;
+    const boxX = screenX - boxWidth / 2;
+    const boxY = screenY - verticalOffset - boxHeight;
 
     ctx.fillStyle = 'rgba(18, 24, 38, 0.85)';
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
@@ -81,7 +89,7 @@
     ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, x, boxY + boxHeight / 2);
+    ctx.fillText(text, screenX, boxY + boxHeight / 2);
     ctx.restore();
   }
 
@@ -155,6 +163,8 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
+    const view = options.view || { x: 0, y: 0, zoom: 1 };
+
     features.forEach((feature) => {
       const position = feature?.position || {};
       const x = width * position.x;
@@ -179,6 +189,7 @@
       if (feature?.guid) {
         renderedFeatures?.push({
           guid: feature.guid,
+          layerId: layer?.id,
           x,
           y,
           size,
@@ -186,7 +197,7 @@
       }
 
       if (hoveredFeature?.guid === feature?.guid) {
-        drawFeatureTooltip(ctx, feature?.name, x, y, size);
+        drawFeatureTooltip(ctx, feature?.name, x, y, size, view);
       }
     });
 
@@ -224,6 +235,7 @@
             drawLayerFeatures(ctx, layer, width, height, renderedFeatures, hoveredFeature, {
                 fallbackFillStyle: 'rgba(255, 255, 255, 0.9)',
                 fallbackStrokeStyle: 'rgba(0, 0, 0, 0.25)',
+                view: state?.view,
             });
         });
     }
