@@ -234,7 +234,7 @@ body {
     min-width: 56px;
     font-size: 0.85rem;
     color: var(--color-text);
-    text-align: right;
+    text-align: left;
 }
 
 .tool-controls__field--color,
@@ -523,7 +523,8 @@ body {
 }
 
 .floating-panel--layer.is-minimized {
-    height: auto !important;
+   height: 70px !important;
+   min-height: 70px !important;
 }
 
 .floating-panel--layer .layer-panel__list {
