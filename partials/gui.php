@@ -4,15 +4,15 @@
 <div id="toolbar" class="toolbar" role="toolbar" aria-label="Map tools">
   <div class="toolbar__group toolbar__group--tools">
     <button type="button" class="toolbar__button" data-tool="pan" aria-pressed="false">
-      <i class="fa-solid fa-hand toolbar__icon" aria-hidden="true"></i>
+      <img src="assets/icons/target/touch.svg" class="toolbar__icon" alt="" aria-hidden="true">
       <span class="toolbar__label">Pan</span>
     </button>
     <button type="button" class="toolbar__button is-active" data-tool="brush" aria-pressed="true">
-      <i class="fa-solid fa-brush toolbar__icon" aria-hidden="true"></i>
+      <img src="assets/icons/util/brush.svg" class="toolbar__icon" alt="" aria-hidden="true">
       <span class="toolbar__label">Brush</span>
     </button>
     <button type="button" class="toolbar__button" data-tool="eraser" aria-pressed="false">
-      <i class="fa-solid fa-eraser toolbar__icon" aria-hidden="true"></i>
+      <img src="assets/icons/util/eraser.svg" class="toolbar__icon" alt="" aria-hidden="true">
       <span class="toolbar__label">Eraser</span>
     </button>
   </div>
