@@ -9,16 +9,47 @@
       const scaleInput = references.landmarkScale;
       const modeButtons = references.landmarkModeButtons || [];
       const imageButton = references.landmarkImageButton;
-      const imagePicker = references.landmarkImagePicker;
+      const imagePreview = imageButton?.querySelector('[data-landmark-image-preview]');
+
+      const iconPicker = ui.LandmarkIconPicker?.init?.();
 
       if (!scaleInput && !modeButtons.length && !imageButton) {
         return null;
       }
 
       const toolsState = (context.toolsState = context.toolsState || {});
-      const defaults = { mode: 'select', scale: 1, imageName: '' };
+      const defaultIcon = imageButton?.dataset.defaultIcon || 'assets/icons/location/castle.svg';
+      const defaults = { mode: 'select', scale: 1, iconPath: defaultIcon };
       const landmark = (toolsState.landmark = Object.assign({}, defaults, toolsState.landmark));
-      const clamp = context.clamp || ((value, min, max) => Math.min(Math.max(value, min), max));
+      const clamp =
+        context.clamp || ((value, min, max) => Math.min(Math.max(value, min), max));
+
+      if (landmark.imageName && !landmark.iconPath) {
+        landmark.iconPath = landmark.imageName;
+      }
+      if (!landmark.iconPath) {
+        landmark.iconPath = defaultIcon;
+      }
+      if ('imageName' in landmark) {
+        delete landmark.imageName;
+      }
+
+      function getIconPath() {
+        const value =
+          typeof landmark.iconPath === 'string' && landmark.iconPath.trim().length
+            ? landmark.iconPath
+            : defaultIcon;
+        landmark.iconPath = value;
+        return value;
+      }
+
+      function updatePreview() {
+        const iconPath = getIconPath();
+        if (imagePreview) {
+          imagePreview.src = iconPath;
+        }
+        iconPicker?.setSelectedIcon?.(iconPath);
+      }
 
       function syncMode() {
         const mode = landmark.mode === 'add' ? 'add' : 'select';
@@ -41,6 +72,7 @@
           context.updateOutput?.('landmark-scale', `${Math.round(value * 100)}%`);
         }
         syncMode();
+        updatePreview();
       }
 
       scaleInput?.addEventListener('input', (event) => {
@@ -64,12 +96,15 @@
       });
 
       imageButton?.addEventListener('click', () => {
-        imagePicker?.click();
+        iconPicker?.open?.({ iconPath: getIconPath(), trigger: imageButton });
       });
 
-      imagePicker?.addEventListener('change', (event) => {
-        const file = event.target.files && event.target.files[0];
-        landmark.imageName = file ? file.name : '';
+      const unsubscribeIconPicker = iconPicker?.onSelect?.((iconPath) => {
+        if (!iconPath) {
+          return;
+        }
+        landmark.iconPath = iconPath;
+        sync();
         context.requestRender?.();
       });
 
@@ -77,6 +112,9 @@
 
       return {
         sync,
+        destroy() {
+          unsubscribeIconPicker?.();
+        },
       };
     },
   };

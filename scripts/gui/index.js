@@ -88,7 +88,6 @@
       landmarkScale: container.querySelector('[data-control="landmark-scale"]'),
       landmarkModeButtons: Array.from(container.querySelectorAll('[data-control="landmark-mode"]')),
       landmarkImageButton: container.querySelector('[data-control="landmark-image"]'),
-      landmarkImagePicker: container.querySelector('[data-picker-for="landmark-image"]'),
     };
 
     const utils = WebMapper.utils || {};
