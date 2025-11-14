@@ -217,12 +217,24 @@
     });
   }
 
+  function bindCenterViewButton() {
+    const button = document.querySelector('[data-action="center-view"]');
+    if (!button) return;
+
+    button.addEventListener('click', () => {
+      if (typeof WebMapper.centerView === 'function') {
+        WebMapper.centerView();
+      }
+    });
+  }
+
   function bindControls() {
     const state = (WebMapper.state = WebMapper.state || {});
 
     bindToolButtons(state);
     bindFeatureToggles(state);
     bindFeaturePanel(state);
+    bindCenterViewButton();
   }
 
   document.addEventListener('DOMContentLoaded', bindControls);
