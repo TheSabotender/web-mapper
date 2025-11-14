@@ -127,7 +127,7 @@
     hoveredFeature,
     options = {}
   ) {
-    if (!isLayerVisible(state, layerId)) return;
+    if (!layer.visible) return;
 
     const features = Array.isArray(layer?.features) ? layer.features : [];
     if (features.length === 0) {
@@ -162,14 +162,10 @@
             ctx.fill();
             ctx.stroke();
             ctx.restore();
-            console.log('Drew fallback for feature:', feature);
-        } else {
-            console.log('Successfully drew icon:', feature);
         }
 
       if (feature?.guid) {
         renderedFeatures?.push({
-          layerId,
           guid: feature.guid,
           x,
           y,
@@ -177,7 +173,7 @@
         });
       }
 
-      if (hoveredFeature?.layerId === layerId && hoveredFeature?.guid === feature?.guid) {
+      if (hoveredFeature?.guid === feature?.guid) {
         drawFeatureTooltip(ctx, feature?.name, x, y, size);
       }
     });
@@ -225,7 +221,7 @@
       hoveredFeature &&
       !renderedFeatures.some(
         (entry) =>
-          entry.layerId === hoveredFeature.layerId && entry.guid === hoveredFeature.guid
+          entry.guid === hoveredFeature.guid
       )
     ) {
       runtime.hoveredFeature = null;

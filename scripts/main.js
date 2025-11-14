@@ -30,7 +30,7 @@
               features: [
                   {
                       guid: 'settlement-emerald-haven',
-                      icon: 'assets/icons/location/Bastle.svg',
+                      icon: 'assets/icons/location/castle.svg',
                       position: { x: 0.25, y: 0.6 },
                       size: 32,
                       name: 'Emerald Haven',
@@ -39,7 +39,7 @@
                   },
                   {
                       guid: 'settlement-crimson-hold',
-                      icon: 'assets/icons/location/Bastion.svg',
+                      icon: 'assets/icons/location/bastion.svg',
                       position: { x: 0.55, y: 0.45 },
                       size: 36,
                       name: 'Crimson Hold',
@@ -48,7 +48,7 @@
                   },
                   {
                       guid: 'settlement-moonlit-harbor',
-                      icon: 'assets/icons/location/Village.svg',
+                      icon: 'assets/icons/location/village.svg',
                       position: { x: 0.7, y: 0.75 },
                       size: 30,
                       name: 'Moonlit Harbor',
@@ -66,7 +66,7 @@
               features: [
                   {
                       guid: 'poi-watchtower',
-                      icon: 'assets/icons/location/Tower.svg',
+                      icon: 'assets/icons/location/tower.svg',
                       position: { x: 0.4, y: 0.2 },
                       size: 28,
                       name: 'Azure Watchtower',
@@ -75,7 +75,7 @@
                   },
                   {
                       guid: 'poi-shrine',
-                      icon: 'assets/icons/location/Hut.svg',
+                      icon: 'assets/icons/location/hut.svg',
                       position: { x: 0.85, y: 0.55 },
                       size: 28,
                       name: 'Lotus Shrine',
@@ -98,14 +98,14 @@
       const parsedState = JSON.parse(raw);
 
       parsedState.features = parsedState.features || {};
-      if (!parsedState.features.layers || !Array.isArray(parsedState.features.layers)) {
-        parsedState.features.layers = structuredClone(defaults.features.layers);
+      if (!parsedState.layers || !Array.isArray(parsedState.layers)) {
+        parsedState.layers = structuredClone(defaults.layers);
       } else {
         const defaultLayersById = new Map(
-          defaults.features.layers.map((layer) => [layer.id, layer])
+          defaults.layers.map((layer) => [layer.id, layer])
         );
 
-        parsedState.features.layers = parsedState.features.layers.map((layer) => {
+        parsedState.layers = parsedState.layers.map((layer) => {
           const defaultLayer = defaultLayersById.get(layer?.id);
           if (!defaultLayer) {
             return layer;
@@ -113,14 +113,14 @@
 
           const mergedLayer = { ...structuredClone(defaultLayer), ...layer };
           if (Array.isArray(layer?.features)) {
-            mergedLayer.features = layer.features.map((feature) => structuredClone(feature));
+            mergedLayer.features = layer.map((feature) => structuredClone(feature));
           }
 
           return mergedLayer;
         });
       }
       if (typeof parsedState.activeLayerId === 'undefined') {
-        parsedState.activeLayerId = defaults.features.activeLayerId;
+        parsedState.activeLayerId = defaults.activeLayerId;
       }
 
       return parsedState;
@@ -136,9 +136,9 @@
   state.settings = Object.assign({}, defaults.settings, state.settings);
   state.features = Object.assign({}, defaults.features, state.features);
 
-  const sourceLayers = Array.isArray(state.features.layers)
-    ? state.features.layers
-    : defaults.features.layers;
+  const sourceLayers = Array.isArray(state.layers)
+    ? state.layers
+    : defaults.layers;
 
   const layersWithMetadata = sourceLayers.map((layer, index) => ({
     layer: { ...layer },
@@ -157,7 +157,7 @@
     return a.originalIndex - b.originalIndex;
   });
 
-  state.features.layers = layersWithMetadata.map((entry, index) => {
+  state.layers = layersWithMetadata.map((entry, index) => {
     entry.layer.sortIndex = index;
     return entry.layer;
   });
@@ -165,7 +165,7 @@
   if (typeof state.activeLayerId === 'undefined') {
     state.activeLayerId = defaults.activeLayerId;
   }
-  state.features.layers.forEach((layer) => {
+  state.layers.forEach((layer) => {
     if (layer?.id) {
       state.features[layer.id] = Boolean(layer.visible);
     }
