@@ -3,7 +3,7 @@
 
   const defaults = (WebMapper.defaults = WebMapper.defaults || {
     canvas: { width: 1280, height: 720 },
-    settings: { showGrid: true, animation: 'none', uiScale: 100 },
+    settings: { showGrid: true, animation: 'slow', uiScale: 100 },
     features: {
       roads: true,
       settlements: true,

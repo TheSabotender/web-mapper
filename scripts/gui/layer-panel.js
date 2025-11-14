@@ -13,6 +13,8 @@
   };
 
   const REMOVE_ICON = 'assets/icons/util/trash.svg';
+  const TERRAIN_LAYER_ID = 'terrain';
+  const TERRAIN_LAYER = { id: TERRAIN_LAYER_ID, name: 'Terrain', visible: true, locked: false };
   const MIN_HEIGHT = 220;
   const PANEL_MARGIN = 16;
 
@@ -21,6 +23,29 @@
     { id: 'settlements', name: 'Settlements', visible: true, locked: false },
     { id: 'points', name: 'Points of Interest', visible: true, locked: false },
   ];
+
+  function ensureTerrainLayer(features) {
+    const stored = features?.terrainLayer;
+    const visibleValue =
+      typeof stored?.visible === 'boolean'
+        ? stored.visible
+        : typeof features?.[TERRAIN_LAYER_ID] === 'boolean'
+        ? features[TERRAIN_LAYER_ID]
+        : TERRAIN_LAYER.visible;
+    const lockedValue = typeof stored?.locked === 'boolean' ? stored.locked : Boolean(features?.terrainLocked);
+
+    const terrainLayer = {
+      ...TERRAIN_LAYER,
+      visible: Boolean(visibleValue),
+      locked: Boolean(lockedValue),
+    };
+
+    features.terrainLayer = terrainLayer;
+    features[TERRAIN_LAYER_ID] = terrainLayer.visible;
+    features.terrain = terrainLayer.visible;
+    features.terrainLocked = terrainLayer.locked;
+    return terrainLayer;
+  }
 
   function ensureLayerState(state) {
     const features = (state.features = state.features || {});
@@ -41,6 +66,7 @@
     }
 
     features.layers = layers;
+    ensureTerrainLayer(features);
     if (typeof features.counter !== 'number' || features.counter < layers.length) {
       features.counter = layers.length;
     }
@@ -58,11 +84,22 @@
     features.layers.forEach((layer) => {
       features[layer.id] = Boolean(layer.visible);
     });
+    const terrainLayer = ensureTerrainLayer(features);
+    if (terrainLayer) {
+      features[TERRAIN_LAYER_ID] = Boolean(terrainLayer.visible);
+      features.terrain = Boolean(terrainLayer.visible);
+      features.terrainLocked = Boolean(terrainLayer.locked);
+    }
   }
 
   function findLayer(features, layerId) {
     if (!features || !Array.isArray(features.layers)) return null;
     return features.layers.find((layer) => layer.id === layerId) || null;
+  }
+
+  function getTerrainLayer(features) {
+    if (!features) return null;
+    return ensureTerrainLayer(features);
   }
 
   ui.LayerPanel = {
@@ -155,6 +192,7 @@
 
       function setActiveLayer(layerId) {
         if (!layerId) return;
+        if (layerId === TERRAIN_LAYER_ID) return;
         if (features.activeLayerId === layerId) return;
         const layer = findLayer(features, layerId);
         if (!layer) return;
@@ -163,6 +201,15 @@
       }
 
       function toggleLayerVisibility(layerId) {
+        if (layerId === TERRAIN_LAYER_ID) {
+          const terrainLayer = getTerrainLayer(features);
+          if (!terrainLayer) return;
+          terrainLayer.visible = !terrainLayer.visible;
+          syncFeatureVisibility(features);
+          renderLayers();
+          requestRender?.();
+          return;
+        }
         const layer = findLayer(features, layerId);
         if (!layer) return;
         layer.visible = !layer.visible;
@@ -172,6 +219,14 @@
       }
 
       function toggleLayerLock(layerId) {
+        if (layerId === TERRAIN_LAYER_ID) {
+          const terrainLayer = getTerrainLayer(features);
+          if (!terrainLayer) return;
+          terrainLayer.locked = !terrainLayer.locked;
+          features.terrainLocked = terrainLayer.locked;
+          renderLayers();
+          return;
+        }
         const layer = findLayer(features, layerId);
         if (!layer) return;
         layer.locked = !layer.locked;
@@ -179,6 +234,7 @@
       }
 
       function removeLayer(layerId) {
+        if (layerId === TERRAIN_LAYER_ID) return;
         const index = features.layers.findIndex((layer) => layer.id === layerId);
         if (index === -1) return;
         if (features.layers[index].locked) return;
@@ -197,6 +253,7 @@
       }
 
       function renameLayer(layerId) {
+        if (layerId === TERRAIN_LAYER_ID) return;
         const layer = findLayer(features, layerId);
         if (!layer || layer.locked) return;
 
@@ -221,6 +278,20 @@
         syncFeatureVisibility(features);
         renderLayers();
         requestRender?.();
+      }
+
+      const MAX_NAME_LENGTH = 28;
+
+      function formatLayerName(name) {
+        const baseName = typeof name === 'string' ? name.trim() : '';
+        if (!baseName) {
+          return '';
+        }
+        if (baseName.length <= MAX_NAME_LENGTH) {
+          return baseName;
+        }
+        const sliceEnd = Math.max(0, MAX_NAME_LENGTH - 2);
+        return `${baseName.slice(0, sliceEnd)}..`;
       }
 
       function createIconButton({ action, layerId, icon, pressed, label, disabled }) {
@@ -251,6 +322,45 @@
         list.innerHTML = '';
 
         const fragment = document.createDocumentFragment();
+        const terrainLayer = getTerrainLayer(features);
+        if (terrainLayer) {
+          const terrainItem = document.createElement('div');
+          terrainItem.className = 'layer-panel__item layer-panel__item--terrain';
+          terrainItem.dataset.layerId = TERRAIN_LAYER_ID;
+          terrainItem.dataset.staticLayer = 'true';
+          terrainItem.setAttribute('role', 'option');
+          terrainItem.setAttribute('aria-selected', 'false');
+          terrainItem.id = `layer-option-${TERRAIN_LAYER_ID}`;
+          terrainItem.tabIndex = -1;
+
+          if (terrainLayer.locked) {
+            terrainItem.classList.add('is-locked');
+          }
+
+          const terrainVisibilityButton = createIconButton({
+            action: 'toggle-visibility',
+            layerId: TERRAIN_LAYER_ID,
+            icon: terrainLayer.visible ? VISIBILITY_ICONS.true : VISIBILITY_ICONS.false,
+            pressed: terrainLayer.visible,
+            label: `${terrainLayer.visible ? 'Hide' : 'Show'} terrain layer`,
+          });
+
+          const terrainLockButton = createIconButton({
+            action: 'toggle-lock',
+            layerId: TERRAIN_LAYER_ID,
+            icon: terrainLayer.locked ? LOCK_ICONS.true : LOCK_ICONS.false,
+            pressed: terrainLayer.locked,
+            label: `${terrainLayer.locked ? 'Unlock' : 'Lock'} terrain layer`,
+          });
+
+          const terrainLabel = document.createElement('span');
+          terrainLabel.className = 'layer-panel__label';
+          terrainLabel.textContent = TERRAIN_LAYER.name;
+
+          terrainItem.append(terrainVisibilityButton, terrainLockButton, terrainLabel);
+          fragment.appendChild(terrainItem);
+        }
+
         features.layers.forEach((layer) => {
           const item = document.createElement('div');
           item.className = 'layer-panel__item';
@@ -292,7 +402,7 @@
           nameButton.setAttribute('aria-label', `Select layer ${layer.name}`);
           nameButton.title = layer.name;
           const nameSpan = document.createElement('span');
-          nameSpan.textContent = layer.name;
+          nameSpan.textContent = formatLayerName(layer.name);
           nameButton.appendChild(nameSpan);
 
           const removeButton = createIconButton({
@@ -414,6 +524,7 @@
         if (!actionTarget) {
           const item = event.target.closest('.layer-panel__item');
           if (!item) return;
+          if (item.dataset.staticLayer === 'true') return;
           setActiveLayer(item.dataset.layerId);
           return;
         }
@@ -447,12 +558,14 @@
 
         const item = event.target.closest('.layer-panel__item');
         if (!item) return;
+        if (item.dataset.staticLayer === 'true') return;
         renameLayer(item.dataset.layerId);
       });
 
       list?.addEventListener('keydown', (event) => {
         const item = event.target.closest('.layer-panel__item');
         if (!item) return;
+        if (item.dataset.staticLayer === 'true') return;
         const layerId = item.dataset.layerId;
         if (!layerId) return;
 

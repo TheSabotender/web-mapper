@@ -37,8 +37,8 @@
           <label class="settings-form__row">
             <span>Animation</span>
             <select id="settings-animation">
-              <option value="none" selected>Static</option>
-              <option value="slow">Slow</option>
+              <option value="none">Static</option>
+              <option value="slow" selected>Slow</option>
               <option value="fast">Fast</option>
             </select>
           </label>
