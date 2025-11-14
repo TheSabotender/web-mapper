@@ -208,6 +208,7 @@
           syncFeatureVisibility(features);
           renderLayers();
           requestRender?.();
+          WebMapper.saveState?.();
           return;
         }
         const layer = findLayer(features, layerId);
@@ -216,6 +217,7 @@
         syncFeatureVisibility(features);
         renderLayers();
         requestRender?.();
+        WebMapper.saveState?.();
       }
 
       function toggleLayerLock(layerId) {
@@ -225,12 +227,14 @@
           terrainLayer.locked = !terrainLayer.locked;
           features.terrainLocked = terrainLayer.locked;
           renderLayers();
+          WebMapper.saveState?.();
           return;
         }
         const layer = findLayer(features, layerId);
         if (!layer) return;
         layer.locked = !layer.locked;
         renderLayers();
+        WebMapper.saveState?.();
       }
 
       function removeLayer(layerId) {
@@ -250,6 +254,7 @@
 
         renderLayers();
         requestRender?.();
+        WebMapper.saveState?.();
       }
 
       function renameLayer(layerId) {
@@ -264,6 +269,7 @@
           if (trimmed && trimmed !== currentName) {
             layer.name = trimmed;
             renderLayers();
+            WebMapper.saveState?.();
           }
         }
       }
@@ -278,6 +284,7 @@
         syncFeatureVisibility(features);
         renderLayers();
         requestRender?.();
+        WebMapper.saveState?.();
       }
 
       const MAX_NAME_LENGTH = 28;

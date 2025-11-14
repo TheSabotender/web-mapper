@@ -135,6 +135,8 @@
 
       WebMapper.ui?.applyUiScale?.(uiScale);
 
+      WebMapper.saveState?.();
+
       initialUiScale = uiScale;
       previewUiScale = null;
 
