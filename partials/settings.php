@@ -1,7 +1,14 @@
 <?php
 // partials/settings.php
 ?>
-<div id="settings-overlay" class="settings-overlay" role="dialog" aria-modal="true" aria-hidden="true">
+<div
+  id="settings-overlay"
+  class="settings-overlay"
+  role="dialog"
+  aria-modal="true"
+  aria-hidden="true"
+  hidden
+>
   <div class="settings-modal">
     <header class="settings-modal__header">
       <h2 class="settings-modal__title">Settings</h2>

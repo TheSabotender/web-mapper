@@ -72,6 +72,7 @@
     }
 
     overlay.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    overlay.hidden = !visible;
 
     if (visible) {
       const selectedButton = highlightIcon(activeIconPath);
