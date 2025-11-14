@@ -16,9 +16,7 @@
         return null;
       }
 
-      const toolsState = (context.toolsState = context.toolsState || {});
-      const defaults = { size: 48, strength: 75, softness: 50, color: '#4f8bff' };
-      const brush = (toolsState.brush = Object.assign({}, defaults, toolsState.brush));
+      const brush = { size: 48, strength: 75, softness: 50, color: '#4f8bff' };
       const clamp = context.clamp || ((value, min, max) => Math.min(Math.max(value, min), max));
 
       function setColor(value) {

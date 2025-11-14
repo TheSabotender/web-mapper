@@ -14,9 +14,7 @@
         return null;
       }
 
-      const toolsState = (context.toolsState = context.toolsState || {});
-      const defaults = { size: 48, strength: 100, softness: 40 };
-      const eraser = (toolsState.eraser = Object.assign({}, defaults, toolsState.eraser));
+      const eraser = { size: 48, strength: 100, softness: 40 };
       const clamp = context.clamp || ((value, min, max) => Math.min(Math.max(value, min), max));
 
       function sync() {

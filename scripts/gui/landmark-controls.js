@@ -17,10 +17,8 @@
         return null;
       }
 
-      const toolsState = (context.toolsState = context.toolsState || {});
-      const defaultIcon = imageButton?.dataset.defaultIcon || 'assets/icons/location/castle.svg';
-      const defaults = { mode: 'select', scale: 1, iconPath: defaultIcon };
-      const landmark = (toolsState.landmark = Object.assign({}, defaults, toolsState.landmark));
+      const defaultIcon = imageButton?.dataset.defaultIcon || 'assets/icons/location/castle.svg';      
+      const landmark = { mode: 'select', scale: 1, iconPath: defaultIcon };
       const clamp =
         context.clamp || ((value, min, max) => Math.min(Math.max(value, min), max));
 

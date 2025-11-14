@@ -8,75 +8,13 @@
     }
   }
 
-  function formatToggle(value) {
-    return value ? 'ON' : 'OFF';
-  }
-
   function RenderGUI(ctx, state) {
-    WebMapper.ui?.debugPanel?.update?.(state);
+    if (WebMapper.debug)
+        WebMapper.ui?.debugPanel?.update?.(state);
 
     if (!ctx) return;
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-
-    if (!state?.debug) {
-      return;
-    }
-
-    const activeTool = state?.tool ?? 'N/A';
-    const activeLayer = state?.activeLayerId ?? 'N/A';
-    const terrainVisible = Boolean(state?.terrainVisible);
-    const terrainLocked = Boolean(state?.terrainLocked);
-    const pathsVisible = Boolean(state?.pathsVisible);
-    const pathsLocked = Boolean(state?.pathsLocked);
-
-    const lines = [
-      { font: '16px "Segoe UI", sans-serif', text: `Tool: ${activeTool}` },
-      { font: '13px "Segoe UI", sans-serif', text: `Active layer: ${activeLayer}` },
-      {
-        font: '13px "Segoe UI", sans-serif',
-        text: `Terrain → Visible: ${formatToggle(terrainVisible)} · Locked: ${formatToggle(
-          terrainLocked
-        )}`,
-      },
-      {
-        font: '13px "Segoe UI", sans-serif',
-        text: `Paths → Visible: ${formatToggle(pathsVisible)} · Locked: ${formatToggle(
-          pathsLocked
-        )}`,
-      },
-    ];
-
-    ctx.save();
-
-    const paddingX = 16;
-    const paddingY = 16;
-    const lineSpacing = 20;
-    let maxWidth = 0;
-
-    lines.forEach((line) => {
-      ctx.font = line.font;
-      const width = ctx.measureText(line.text).width;
-      if (width > maxWidth) {
-        maxWidth = width;
-      }
-    });
-
-    const boxWidth = maxWidth + paddingX * 2;
-    const boxHeight = paddingY * 2 + lineSpacing * lines.length;
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-    ctx.fillRect(16, 16, boxWidth, boxHeight);
-
-    let currentY = 16 + paddingY + 4;
-    lines.forEach((line, index) => {
-      ctx.font = line.font;
-      ctx.fillStyle = index === 0 ? '#ffffff' : 'rgba(255, 255, 255, 0.8)';
-      ctx.fillText(line.text, 16 + paddingX, currentY);
-      currentY += lineSpacing;
-    });
-
-    ctx.restore();
   }
 
   function getCanvasSize() {
@@ -128,8 +66,7 @@
         : (value, min, max) => Math.min(Math.max(value, min), max);
 
     const view = (state.view = Object.assign({ x: 0, y: 0, zoom: 1 }, state.view));
-    const toolsState = (state.tools = state.tools || {});
-
+    
     function updateOutput(name, text) {
       const output = outputs.get(name);
       if (output) {
@@ -140,7 +77,6 @@
     const context = {
       state,
       view,
-      toolsState,
       container,
       panels,
       references,

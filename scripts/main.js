@@ -9,18 +9,23 @@
 
   const defaults = (WebMapper.defaults = WebMapper.defaults || {
     canvas: { width: 1280, height: 720 },
-      settings: { showGrid: true, animation: 'slow', uiScale: 100 },
-      activeLayerId: 'roads',
-      tool: 'pan',
-      terrainVisible: true,
-      terrainLocked: false,
-      pathsVisible: true,
-      pathsLocked: false,
+    settings: { showGrid: true, animation: 'slow', uiScale: 100 },
+    activeLayerId: 'roads',
+    tool: 'pan',
+    view: { x: 0, y: 0, zoom: 1 },
+    terrainVisible: true,
+    terrainLocked: false,
+    pathsVisible: true,
+    pathsLocked: false,
     paths: [
-      { id: 'road001', type: 'road', width: 8 }
+      {
+        id: 'road001', type: 'road', width: 8, points: [
+              { inX: 0.35, inY: 0.65, x: 0.45, y: 0.95, outX: 0.75, outY: 0.2 },
+              { inX: 0.35, inY: 0.65, x: 1.45, y: 0.95, outX: 0.75, outY: 0.2 }
+        ]
+      }
     ],    
-    layers: [
-      { id: 'roads', name: 'Roads', visible: true, locked: false, sortIndex: 0 },
+    layers: [      
       {
               id: 'settlements',
               name: 'Settlements',
@@ -88,39 +93,25 @@
   });
 
   function loadState() {
-    try {
+      try {
+          const params = new URLSearchParams(window.location.search);
+          WebMapper.debug = params.has('debug');
+
       if (typeof localStorage === 'undefined') {
         return structuredClone(defaults);
       }
       const raw = localStorage.getItem(STORAGE_KEY);
+
       if (!raw) return structuredClone(defaults);
 
       const parsedState = JSON.parse(raw);
 
-      parsedState.features = parsedState.features || {};
+      if (!parsedState.paths || !Array.isArray(parsedState.paths)) {
+        parsedState.paths = structuredClone(defaults.paths);
+      }
+
       if (!parsedState.layers || !Array.isArray(parsedState.layers)) {
         parsedState.layers = structuredClone(defaults.layers);
-      } else {
-        const defaultLayersById = new Map(
-          defaults.layers.map((layer) => [layer.id, layer])
-        );
-
-        parsedState.layers = parsedState.layers.map((layer) => {
-          const defaultLayer = defaultLayersById.get(layer?.id);
-          if (!defaultLayer) {
-            return layer;
-          }
-
-          const mergedLayer = { ...structuredClone(defaultLayer), ...layer };
-          if (Array.isArray(layer?.features)) {
-            mergedLayer.features = layer.map((feature) => structuredClone(feature));
-          }
-
-          return mergedLayer;
-        });
-      }
-      if (typeof parsedState.activeLayerId === 'undefined') {
-        parsedState.activeLayerId = defaults.activeLayerId;
       }
 
       return parsedState;
@@ -134,12 +125,11 @@
   Object.assign(state, loadState());
   state.canvas = Object.assign({}, defaults.canvas, state.canvas);
   state.settings = Object.assign({}, defaults.settings, state.settings);
-  state.features = Object.assign({}, defaults.features, state.features);
 
   const sourceLayers = Array.isArray(state.layers)
     ? state.layers
     : defaults.layers;
-
+    
   const layersWithMetadata = sourceLayers.map((layer, index) => ({
     layer: { ...layer },
     originalIndex: index,
@@ -165,16 +155,8 @@
   if (typeof state.activeLayerId === 'undefined') {
     state.activeLayerId = defaults.activeLayerId;
   }
-  state.layers.forEach((layer) => {
-    if (layer?.id) {
-      state.features[layer.id] = Boolean(layer.visible);
-    }
-  });
+  
   state.tool = state.tool || defaults.tool;
-  if (typeof state.debug === 'undefined') {
-    const params = new URLSearchParams(window.location.search);
-    state.debug = params.has('debug');
-  }
 
   function saveState() {
     try {

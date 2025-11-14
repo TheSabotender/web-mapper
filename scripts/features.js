@@ -200,10 +200,10 @@
     const hoveredFeature = runtime.hoveredFeature || null;
 
     const paths = state?.paths || [];
-      if (paths.length !== 0 && state.pathsVisible) {
-          paths.forEach((path) => {
-              drawPaths(ctx, path, width, height);
-          });
+    if (paths.length !== 0 && state.pathsVisible) {
+      paths.forEach((path) => {
+        drawPaths(ctx, path, width, height);
+      });
     }
 
     const layers = state?.layers || [];

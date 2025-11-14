@@ -12,6 +12,9 @@
     terrainLockedValue: null,
     pathsVisibleValue: null,
     pathsLockedValue: null,
+    pathsValue: null,
+    layersValue: null,
+    layers: null,
     resetButton: null,
   };
 
@@ -30,7 +33,7 @@
     return JSON.parse(JSON.stringify(value));
   }
 
-  function ensureDebugPanel() {
+  function ensureDebugPanel(state) {
     if (debugPanelState.panel) {
       return debugPanelState;
     }
@@ -62,7 +65,7 @@
     list.style.columnGap = '8px';
     list.style.rowGap = '6px';
     list.style.margin = '0 0 12px';
-
+    
     function createRow(labelText) {
       const term = document.createElement('dt');
       term.textContent = labelText;
@@ -86,6 +89,13 @@
     const terrainLockedValue = createRow('Terrain locked');
     const pathsVisibleValue = createRow('Paths visible');
     const pathsLockedValue = createRow('Paths locked');
+    const pathsValue = createRow('Paths');
+    const layersValue = createRow('Layers');
+    const layers = [];
+      state.layers.forEach((layer) => {          
+      const layerValue = createRow(` - ${layer.name}`);
+	  layers.push(layerValue);
+    });
 
     panel.appendChild(list);
 
@@ -127,6 +137,9 @@
     debugPanelState.terrainLockedValue = terrainLockedValue;
     debugPanelState.pathsVisibleValue = pathsVisibleValue;
     debugPanelState.pathsLockedValue = pathsLockedValue;
+    debugPanelState.pathsValue = pathsValue;
+    debugPanelState.layersValue = layersValue;
+    debugPanelState.layers = layers;
     debugPanelState.resetButton = resetButton;
 
     return debugPanelState;
@@ -143,6 +156,9 @@
     debugPanelState.terrainLockedValue = null;
     debugPanelState.pathsVisibleValue = null;
     debugPanelState.pathsLockedValue = null;
+    debugPanelState.pathsValue = null;
+    debugPanelState.layersValue = null;
+    debugPanelState.layers = null;
     debugPanelState.resetButton = null;
   }
 
@@ -153,16 +169,13 @@
       return;
     }
 
-    const preservedDebug = state.debug;
     const preservedView =
       state.view && typeof state.view === 'object' ? state.view : null;
-    const preservedTools =
-      state.tools && typeof state.tools === 'object' ? state.tools : null;
-
+    
     const defaultsClone = cloneValue(defaults);
 
     Object.entries(defaultsClone).forEach(([key, value]) => {
-      if (key === 'view' || key === 'tools') {
+      if (key === 'view') {
         return;
       }
       state[key] = value;
@@ -182,26 +195,6 @@
       state.view = defaultsClone.view;
     } else {
       state.view = { x: 0, y: 0, zoom: 1 };
-    }
-
-    state.debug = preservedDebug;
-
-    if (preservedTools) {
-      const defaultTools =
-        defaultsClone.tools && typeof defaultsClone.tools === 'object'
-          ? defaultsClone.tools
-          : {};
-      Object.keys(preservedTools).forEach((key) => {
-        delete preservedTools[key];
-      });
-      Object.assign(preservedTools, defaultTools);
-      state.tools = preservedTools;
-    } else if (defaultsClone.tools) {
-      state.tools = defaultsClone.tools;
-    }
-
-    if (!state.tools || typeof state.tools !== 'object') {
-      state.tools = {};
     }
 
     WebMapper.ui?.toolControls?.setActiveTool?.(state.tool);
@@ -230,7 +223,7 @@
       return;
     }
 
-    const panelElements = ensureDebugPanel();
+    const panelElements = ensureDebugPanel(state);
     if (!panelElements.resetButton.__webMapperBound) {
       panelElements.resetButton.addEventListener('click', () => {
         resetStateToDefaults();
@@ -253,6 +246,16 @@
     panelElements.pathsLockedValue.textContent = formatToggle(
       Boolean(state.pathsLocked)
     );
+
+    panelElements.pathsValue.textContent = state.paths.length;
+    panelElements.layersValue.textContent = state.layers.length;
+
+    for (let i = 0; i < panelElements.layers.length; i++) {
+      const layer = state.layers[i];
+      const layerCount = layer?.features?.length || 0;
+
+      panelElements.layers[i].textContent = layerCount;
+    }
   }
 
   debugPanel.update = updateDebugPanel;
