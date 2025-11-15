@@ -69,11 +69,32 @@
     };
   }
 
+  function findFeatureByRef(state, reference) {
+    if (!state || !reference) {
+      return null;
+    }
+
+    const layers = Array.isArray(state.layers) ? state.layers : [];
+    const layer = layers.find((entry) => entry?.id === reference.layerId);
+    if (!layer) {
+      return null;
+    }
+
+    const features = Array.isArray(layer.features) ? layer.features : [];
+    const feature = features.find((item) => item?.guid === reference.guid);
+    if (!feature) {
+      return null;
+    }
+
+    return { layer, feature };
+  }
+
   WebMapper.utils = {
     ensureNumber,
     clamp,
     generateGuid,
     prepareMapContext,
+    findFeatureByRef,
     resizeCanvas(canvas, width, height) {
       const w = ensureNumber(width, canvas.clientWidth);
       const h = ensureNumber(height, canvas.clientHeight);

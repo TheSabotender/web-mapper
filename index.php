@@ -18,6 +18,7 @@
   </div>
 
   <?php include __DIR__ . '/partials/landmark-icon-picker.php'; ?>
+  <?php include __DIR__ . '/partials/landmark-info-panel.php'; ?>
   <?php include __DIR__ . '/partials/settings.php'; ?>
 
   <script src="scripts/utils.js"></script>
@@ -31,6 +32,7 @@
   <script src="scripts/gui/layer-panel.js"></script>
   <script src="scripts/gui/toolbar.js"></script>
   <script src="scripts/gui/debug.js"></script>
+  <script src="scripts/gui/landmark-info-panel.js"></script>
   <script src="scripts/gui/index.js"></script>
   <script src="scripts/settings.js"></script>
   <script src="scripts/main.js"></script>

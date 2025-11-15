@@ -956,6 +956,155 @@ body {
     padding: 1.5rem;
 }
 
+.landmark-info-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(10, 12, 20, 0.68);
+    z-index: 110;
+}
+
+    .landmark-info-overlay[aria-hidden="false"] {
+        display: flex;
+    }
+
+.landmark-info-modal {
+    width: min(440px, 100%);
+    max-height: min(90vh, 560px);
+    background: var(--color-surface);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-overlay);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.landmark-info-modal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1.15rem 1.5rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.landmark-info-modal__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.landmark-info-modal__title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+.landmark-info-modal__body {
+    flex: 1 1 auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    overflow-y: auto;
+}
+
+.landmark-info-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.landmark-info-field__label {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+}
+
+.landmark-info-field__value {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--color-text);
+    word-break: break-word;
+}
+
+.landmark-info-field__value--description {
+    line-height: 1.65;
+}
+
+.landmark-info-field__value.is-empty {
+    color: var(--color-muted);
+    font-style: italic;
+}
+
+.landmark-info-field--url .landmark-info-field__value {
+    font-size: 0.95rem;
+}
+
+.landmark-info-modal__body p {
+    margin: 0.3rem 0;
+}
+
+.landmark-info-modal__body a {
+    color: var(--color-accent);
+    text-decoration: none;
+}
+
+    .landmark-info-modal__body a:hover {
+        text-decoration: underline;
+    }
+
+.landmark-info-modal__body code {
+    font-family: 'Fira Code', 'Source Code Pro', monospace;
+    font-size: 0.9em;
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.landmark-info-actions {
+    margin-top: auto;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.landmark-info-input {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: var(--color-background);
+    color: var(--color-text);
+    font-size: 1rem;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.landmark-info-input:focus {
+    outline: 2px solid rgba(79, 139, 255, 0.4);
+    outline-offset: 1px;
+}
+
+.landmark-info-input--textarea {
+    min-height: 140px;
+    line-height: 1.5;
+}
+
+.landmark-info-modal .button--icon.is-active {
+    background: rgba(79, 139, 255, 0.16);
+    border-color: rgba(79, 139, 255, 0.4);
+}
+
+.landmark-info-modal .button--icon.is-active:hover {
+    background: rgba(79, 139, 255, 0.22);
+}
+
 .settings-form {
     display: flex;
     flex-direction: column;

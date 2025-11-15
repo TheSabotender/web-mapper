@@ -414,6 +414,32 @@
       }
     });
 
+    container.addEventListener('click', (event) => {
+      if (isPanning) {
+        return;
+      }
+
+      if (typeof event.button === 'number' && event.button !== 0) {
+        return;
+      }
+
+      updateHoveredFeatureFromPointer(event);
+
+      const hovered = runtime.hoveredFeature;
+      if (!hovered) {
+        return;
+      }
+
+      const result = WebMapper.utils?.findFeatureByRef?.(state, hovered);
+      if (!result?.feature) {
+        return;
+      }
+
+      const reference = { layerId: hovered.layerId, guid: hovered.guid };
+      setHoveredFeature(null);
+      WebMapper.ui?.landmarkInfoPanel?.open?.(reference);
+    });
+
     container.addEventListener(
       'wheel',
       (event) => {
